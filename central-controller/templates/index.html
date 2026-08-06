@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Haunted House Controller</title>
+  <style>
+    :root {
+      --bg: #08131a;
+      --panel: #10242f;
+      --panel2: #143443;
+      --text: #e7f6ff;
+      --muted: #9fc3d1;
+      --ok: #57d88b;
+      --bad: #ff6a6a;
+      --accent: #f7b955;
+    }
+    body {
+      margin: 0;
+      font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+      color: var(--text);
+      background: radial-gradient(circle at top, #133545 0%, var(--bg) 60%);
+    }
+    .wrap {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+    .row {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
+    .card {
+      background: linear-gradient(160deg, var(--panel), var(--panel2));
+      border: 1px solid #2f5f71;
+      border-radius: 12px;
+      padding: 16px;
+    }
+    h1, h2 {
+      margin: 0 0 12px;
+    }
+    .status {
+      font-weight: 700;
+      color: var(--ok);
+    }
+    .status.bad {
+      color: var(--bad);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    th, td {
+      text-align: left;
+      border-bottom: 1px solid #2f5f71;
+      padding: 8px 4px;
+      font-size: 14px;
+    }
+    label {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+    input, select, button {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid #396c80;
+      background: #0b1c25;
+      color: var(--text);
+    }
+    button {
+      cursor: pointer;
+      font-weight: 700;
+      background: var(--accent);
+      color: #1e1610;
+      border: none;
+    }
+    .hint {
+      color: var(--muted);
+      font-size: 13px;
+      margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Haunted House Central Controller</h1>
+
+    <div class="row">
+      <div class="card">
+        <h2>Broker Status</h2>
+        {% if mqtt_connected %}
+          <div class="status">Connected</div>
+        {% else %}
+          <div class="status bad">Disconnected</div>
+        {% endif %}
+      </div>
+
+      <div class="card">
+        <h2>Trigger Test</h2>
+        <form id="triggerForm">
+          <label for="device">Device ID</label>
+          <input id="device" name="device" placeholder="esp32-node-01" required />
+
+          <label for="command">Command</label>
+          <select id="command" name="command">
+            {% for command in commands %}
+              <option value="{{ command }}">{{ command }}</option>
+            {% endfor %}
+          </select>
+
+          <button type="submit">Send Trigger</button>
+          <div id="result" class="hint"></div>
+        </form>
+      </div>
+
+      <div class="card">
+        <h2>Known Device Status</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Device</th>
+              <th>Status</th>
+              <th>Updated (UTC)</th>
+            </tr>
+          </thead>
+          <tbody>
+          {% for device_id, status in statuses.items() %}
+            <tr>
+              <td>{{ device_id }}</td>
+              <td>{{ status.payload }}</td>
+              <td>{{ status.updated_at }}</td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const form = document.getElementById("triggerForm");
+    const result = document.getElementById("result");
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      result.textContent = "Sending...";
+
+      const device = document.getElementById("device").value.trim();
+      const command = document.getElementById("command").value;
+
+      try {
+        const response = await fetch(`/api/devices/${encodeURIComponent(device)}/trigger`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ command })
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.detail || "Request failed");
+        }
+
+        result.textContent = `Sent ${data.command} to ${data.device_id} on ${data.topic}`;
+      } catch (error) {
+        result.textContent = `Error: ${error.message}`;
+      }
+    });
+  </script>
+</body>
+</html>
