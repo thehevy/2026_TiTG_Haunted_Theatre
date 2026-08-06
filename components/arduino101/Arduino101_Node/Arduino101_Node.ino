@@ -4,6 +4,8 @@
 RCSwitch rfReceiver = RCSwitch();
 
 constexpr uint8_t RF_RECEIVER_PIN = 2;
+constexpr uint8_t POSITIVE_TRIGGER_PIN = 7;
+constexpr uint8_t NEGATIVE_TRIGGER_PIN = 8;
 constexpr uint8_t RELAY1_PIN = 4;
 constexpr uint8_t RELAY2_PIN = 5;
 constexpr uint8_t RELAY3_PIN = 6;
@@ -11,6 +13,7 @@ constexpr uint8_t RELAY3_PIN = 6;
 constexpr bool RELAY_ACTIVE_LOW = true;
 constexpr unsigned long PULSE_MS = 250;
 constexpr unsigned long LOCKOUT_MS = 15000;
+constexpr unsigned long INPUT_DEBOUNCE_MS = 50;
 constexpr uint32_t CONFIG_MAGIC = 0x41433130UL;
 constexpr int EEPROM_SLOT_ADDR = 0;
 
@@ -28,6 +31,10 @@ unsigned long relay2OffAt = 0;
 unsigned long relay2LockoutUntil = 0;
 bool relay3State = false;
 unsigned long lastHeartbeatAt = 0;
+unsigned long lastPositiveTriggerAt = 0;
+unsigned long lastNegativeTriggerAt = 0;
+bool lastPositiveActive = false;
+bool lastNegativeActive = false;
 
 bool timeReached(unsigned long now, unsigned long target) {
   return target != 0 && static_cast<long>(now - target) >= 0;
@@ -72,25 +79,16 @@ void printCode(const __FlashStringHelper *label, uint32_t code) {
   }
 }
 
-void setup() {
-  Serial.begin(115200);
-
-  pinMode(RELAY1_PIN, OUTPUT);
-  pinMode(RELAY2_PIN, OUTPUT);
-  pinMode(RELAY3_PIN, OUTPUT);
-
-  setRelay(RELAY1_PIN, false);
-  setRelay(RELAY2_PIN, false);
-  setRelay(RELAY3_PIN, false);
-
-  loadConfig();
-  rfReceiver.enableReceive(digitalPinToInterrupt(RF_RECEIVER_PIN));
-
+void printHeader() {
   Serial.println(F("=== Arduino 101 Haunted Node ==="));
   Serial.println(F("Purpose: RF receiver drives three relay behaviors."));
   Serial.println(F("Input pin:"));
   Serial.print(F("  RF receiver data: D"));
   Serial.println(RF_RECEIVER_PIN);
+  Serial.print(F("  Positive trigger input (active HIGH): D"));
+  Serial.println(POSITIVE_TRIGGER_PIN);
+  Serial.print(F("  Negative trigger input (active LOW, pull-up enabled): D"));
+  Serial.println(NEGATIVE_TRIGGER_PIN);
   Serial.println(F("Output pins:"));
   Serial.print(F("  Relay 1 (momentary pulse): D"));
   Serial.println(RELAY1_PIN);
@@ -110,8 +108,67 @@ void setup() {
   Serial.println(F("Ready."));
 }
 
+void firePositiveInputTrigger(unsigned long now) {
+  Serial.println(F("Input trigger: POSITIVE"));
+  pulseRelay(RELAY1_PIN, relay1OffAt, PULSE_MS);
+  lastPositiveTriggerAt = now;
+}
+
+void fireNegativeInputTrigger(unsigned long now) {
+  Serial.println(F("Input trigger: NEGATIVE"));
+  Serial.println(F("Reprinting header due to negative trigger."));
+  printHeader();
+  if (relay2LockoutUntil == 0) {
+    pulseRelay(RELAY2_PIN, relay2OffAt, PULSE_MS);
+    relay2LockoutUntil = millis() + LOCKOUT_MS;
+  } else {
+    Serial.println(F("Negative input ignored during lockout"));
+  }
+  lastNegativeTriggerAt = now;
+}
+
+void handleInputTriggers(unsigned long now) {
+  bool positiveActive = digitalRead(POSITIVE_TRIGGER_PIN) == HIGH;
+  bool negativeActive = digitalRead(NEGATIVE_TRIGGER_PIN) == LOW;
+
+  if (positiveActive && !lastPositiveActive && (now - lastPositiveTriggerAt >= INPUT_DEBOUNCE_MS)) {
+    firePositiveInputTrigger(now);
+  }
+
+  if (negativeActive && !lastNegativeActive && (now - lastNegativeTriggerAt >= INPUT_DEBOUNCE_MS)) {
+    fireNegativeInputTrigger(now);
+  }
+
+  lastPositiveActive = positiveActive;
+  lastNegativeActive = negativeActive;
+}
+
+void setup() {
+  Serial.begin(115200);
+
+  pinMode(POSITIVE_TRIGGER_PIN, INPUT);
+  pinMode(NEGATIVE_TRIGGER_PIN, INPUT_PULLUP);
+  pinMode(RELAY1_PIN, OUTPUT);
+  pinMode(RELAY2_PIN, OUTPUT);
+  pinMode(RELAY3_PIN, OUTPUT);
+
+  setRelay(RELAY1_PIN, false);
+  setRelay(RELAY2_PIN, false);
+  setRelay(RELAY3_PIN, false);
+
+  lastPositiveActive = digitalRead(POSITIVE_TRIGGER_PIN) == HIGH;
+  lastNegativeActive = digitalRead(NEGATIVE_TRIGGER_PIN) == LOW;
+
+  loadConfig();
+  rfReceiver.enableReceive(digitalPinToInterrupt(RF_RECEIVER_PIN));
+
+  printHeader();
+}
+
 void loop() {
   unsigned long now = millis();
+
+  handleInputTriggers(now);
 
   if (now - lastHeartbeatAt >= 5000) {
     lastHeartbeatAt = now;

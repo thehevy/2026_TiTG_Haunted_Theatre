@@ -1,6 +1,7 @@
 # 2026 TiTG Haunted Theatre
 
 Centralized haunted-house control project for mixed hardware:
+
 - Arduino 101 (Intel Curie)
 - ESP32
 - ESP8266
@@ -8,6 +9,7 @@ Centralized haunted-house control project for mixed hardware:
 - Rocky Linux / Raspberry Pi server controllers
 
 This repository contains:
+
 - Device firmware sketches for multiple board families
 - A central web controller scaffold (FastAPI + MQTT)
 - Rocky Linux deployment and hardening scripts
@@ -17,12 +19,16 @@ This repository contains:
 
 - `components/arduino101/Arduino101_Node/Arduino101_Node.ino`
   - Arduino 101 RF-driven relay node (pulse, lockout pulse, toggle)
+  - Pinout: `components/arduino101/PINOUT.md`
 - `components/esp32/ESP32_Node.ino`
   - ESP32 MQTT relay node
+  - Pinout: `components/esp32/PINOUT.md`
 - `components/esp8266/ESP8266_Node.ino`
   - ESP8266 MQTT relay node
+  - Pinout: `components/esp8266/PINOUT.md`
 - `components/uno/UNO_Node.ino`
   - UNO serial relay node
+  - Pinout: `components/uno/PINOUT.md`
 - `central-controller/`
   - Web controller app and deployment assets
 - `SETUP_GUIDE.md`
@@ -35,10 +41,11 @@ This repository contains:
 ### 1. Arduino 101 Node
 
 1. Open `components/arduino101/Arduino101_Node/Arduino101_Node.ino` in Arduino IDE 1.8.19.
-2. Set board to Arduino/Genuino 101.
-3. Set port to COM5 (or your active board port).
-4. Upload and open Serial Monitor at 115200.
-5. Verify heartbeat and RF receive output.
+2. Review wiring in `components/arduino101/PINOUT.md`.
+3. Set board to Arduino/Genuino 101.
+4. Set port to COM5 (or your active board port).
+5. Upload and open Serial Monitor at 115200.
+6. Verify heartbeat and RF receive output.
 
 ### 2. Central Controller (Dev Mode)
 
@@ -74,6 +81,7 @@ From `central-controller/` on Rocky Linux:
   - `haunt/<device-id>/status`
 
 Current node command strings:
+
 - `relay1:pulse`
 - `relay2:pulse`
 - `relay3:toggle`
