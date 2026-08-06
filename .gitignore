@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+.venv/
+venv/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Build and tooling artifacts
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
+.vscode/
+
+# Logs
+*.log
+
+# Node (if future UI tooling is added)
+node_modules/
