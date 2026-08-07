@@ -1,4 +1,19 @@
-# Haunted House Central Controller
+﻿# Haunted House Central Controller
+
+**Created:** 2026-07-30
+**Last Updated:** 2026-08-07
+
+## Table of Contents
+
+- [Features](#features)
+- [Compatible Device Topic Pattern](#compatible-device-topic-pattern)
+- [Quick Start (Rocky Linux)](#quick-start-rocky-linux)
+- [Trigger Commands](#trigger-commands)
+- [API Examples](#api-examples)
+- [Deploy with systemd](#deploy-with-systemd)
+- [One-Pass Rocky Linux Deployment](#one-pass-rocky-linux-deployment)
+- [Rocky Ops Scripts](#rocky-ops-scripts)
+- [PostgreSQL Example](#postgresql-example)
 
 This project is a Rocky Linux friendly controller web app for managing haunted-house device triggers.
 

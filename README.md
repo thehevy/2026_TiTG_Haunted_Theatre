@@ -1,4 +1,7 @@
-# 2026 TiTG Haunted Theatre
+﻿# 2026 TiTG Haunted Theatre
+
+**Created:** 2026-07-30
+**Last Updated:** 2026-08-07
 
 Centralized haunted-house control project for mixed hardware:
 
