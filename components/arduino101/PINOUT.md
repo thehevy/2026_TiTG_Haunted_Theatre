@@ -1,19 +1,22 @@
 # Arduino 101 Pinout Guide
 
+**Created:** 2026-08-07
+**Last Updated:** 2026-08-14
+
 Target sketch:
 
 - `components/arduino101/Arduino101_Node/Arduino101_Node.ino`
 
 ## Function Map
 
-| Function | Arduino 101 Pin | Notes |
-| --- | --- | --- |
-| RF receiver data | D2 | Must be interrupt-capable for `enableReceive`. |
-| Positive trigger input | D7 | Active HIGH input. Wire external source to drive HIGH on trigger. |
-| Negative trigger input | D8 | Active LOW input with internal pull-up enabled. Trigger by pulling to GND. Also reprints header text to Serial Monitor. |
-| Relay 1 output | D4 | Momentary pulse trigger. |
-| Relay 2 output | D5 | Momentary pulse with 15s lockout. |
-| Relay 3 output | D6 | Toggle output. |
+| Function               | Arduino 101 Pin | Notes                                                                                                                   |
+| ---------------------- | --------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| RF receiver data       | D2              | Must be interrupt-capable for `enableReceive`.                                                                          |
+| Positive trigger input | D7              | Active HIGH input. Wire external source to drive HIGH on trigger.                                                       |
+| Negative trigger input | D8              | Active LOW input with internal pull-up enabled. Trigger by pulling to GND. Also reprints header text to Serial Monitor. |
+| Relay 1 output         | D4              | Momentary pulse trigger.                                                                                                |
+| Relay 2 output         | D5              | Momentary pulse with 15s lockout.                                                                                       |
+| Relay 3 output         | D6              | Toggle output.                                                                                                          |
 
 ## Serial Output Path (Important)
 
@@ -24,14 +27,45 @@ Target sketch:
 
 ## Power and Ground
 
-| Device | Arduino 101 Connection |
-| --- | --- |
-| RF receiver VCC | 3.3V or 5V (match module spec) |
-| RF receiver GND | GND |
-| Positive trigger source GND | Common GND with Arduino 101 |
-| Negative trigger switch/sensor | Connect between D8 and GND |
-| Relay module VCC | External 5V recommended for multi-relay boards |
-| Relay module GND | Common GND with Arduino 101 |
+| Device                         | Arduino 101 Connection                         |
+| ------------------------------ | ---------------------------------------------- |
+| RF receiver VCC                | 3.3V or 5V (match module spec)                 |
+| RF receiver GND                | GND                                            |
+| Positive trigger source GND    | Common GND with Arduino 101                    |
+| Negative trigger switch/sensor | Connect between D8 and GND                     |
+| Relay module VCC               | External 5V recommended for multi-relay boards |
+| Relay module GND               | Common GND with Arduino 101                    |
+
+## Board Power Input (Onboard Connector)
+
+| Input Path        | Connector Available | Minimum Input            | Maximum Input             | Notes                                                                                 |
+| ----------------- | ------------------- | ------------------------ | ------------------------- | ------------------------------------------------------------------------------------- |
+| USB power         | Yes (USB)           | 4.75V                    | 5.25V                     | Preferred for bench setup and programming.                                            |
+| Barrel jack / VIN | Yes                 | 7V (recommended minimum) | 12V (recommended maximum) | Board family limit is wider, but 7V to 12V is the practical operating range.          |
+
+## Optional IR Receiver (KY-022 / TL1838 / VS1838B)
+
+### Pinout
+
+- KY-022 signal (S/OUT) -> Arduino 101 D3
+- KY-022 GND (-) -> Arduino 101 GND
+- KY-022 VCC (+) -> Arduino 101 3.3V
+
+### Required Components
+
+- 1x Arduino/Genuino 101
+- 1x KY-022 (TL1838/VS1838B) IR receiver module
+- 1x IR remote transmitter (any common NEC-style remote works)
+- 3x female-to-female jumper wires
+
+### Wiring
+
+1. Connect KY-022 GND to Arduino 101 GND.
+2. Connect KY-022 VCC to Arduino 101 3.3V.
+3. Connect KY-022 signal to Arduino 101 D3.
+4. Keep existing RF receiver on D2 unchanged.
+
+Note: This node sketch currently does not decode IR. Add an IR library and handler logic before expecting trigger actions from the KY-022.
 
 ## Example Components Required
 

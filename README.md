@@ -18,6 +18,23 @@ This repository contains:
 - Rocky Linux deployment and hardening scripts
 - Setup and architecture documentation
 
+## IDE Support Matrix
+
+Use this matrix when selecting Arduino IDE versions for each hardware family.
+
+| Component | Preferred IDE | Status | Notes |
+| --- | --- | --- | --- |
+| Arduino 101 (Intel Curie) | Arduino IDE 1.8.19 | Required | Use 1.8.19 for firmware updates and uploads. Curie tooling is legacy. |
+| ESP32 nodes | Arduino IDE 2.x (latest stable) | Recommended | Keep ESP32 board package current and use Library Manager for dependencies. |
+| ESP8266 nodes | Arduino IDE 2.x (latest stable) | Recommended | Keep ESP8266 board package current and use Library Manager for dependencies. |
+| UNO and Nano class nodes | Arduino IDE 2.x (latest stable) | Recommended | Standard AVR workflows are stable in IDE 2.x. |
+
+Recommended local setup:
+
+- Install Arduino IDE 1.8.19 and Arduino IDE 2.x side-by-side.
+- Use IDE 1.8.19 only for Arduino 101 tasks.
+- Use IDE 2.x for ESP32, ESP8266, UNO, and Nano tasks.
+
 ## Repository Layout
 
 - `components/arduino101/Arduino101_Node/Arduino101_Node.ino`
@@ -88,6 +105,24 @@ Current node command strings:
 - `relay1:pulse`
 - `relay2:pulse`
 - `relay3:toggle`
+
+## Required Libraries
+
+Install these with Arduino IDE Library Manager before compiling the related sketches.
+
+| Board/Sketch | Required library | Notes |
+| --- | --- | --- |
+| Arduino 101 node | `rc-switch` by sui77 | Used for 433 MHz RF receive/decode in the Arduino 101 sketch. |
+| UNO node | `IRremote` by Arduino-IRremote | Required for KY-022/TL1838/VS1838B IR decode (`IRremote.hpp`). |
+| ESP32 node | `PubSubClient` by Nick O'Leary | Required for MQTT client support (`PubSubClient.h`). |
+| ESP32 node | `IRremote` by Arduino-IRremote | Required for KY-022/TL1838/VS1838B IR decode (`IRremote.hpp`). |
+| ESP8266 node | `PubSubClient` by Nick O'Leary | Required for MQTT client support (`PubSubClient.h`). |
+| ESP8266 node | `IRremote` by Arduino-IRremote | Required for KY-022/TL1838/VS1838B IR decode (`IRremote.hpp`). |
+
+Included from board cores (no Library Manager install needed):
+
+- `WiFi.h` for ESP32 comes from the ESP32 board package.
+- `ESP8266WiFi.h` for ESP8266 comes from the ESP8266 board package.
 
 ## Notes
 

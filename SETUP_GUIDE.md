@@ -8,6 +8,7 @@
 - [Goal](#goal)
 - [Current Known Device](#current-known-device)
 - [Recommended IDE](#recommended-ide)
+- [IDE Support Matrix for This Project](#ide-support-matrix-for-this-project)
 - [Step 1: Install Arduino IDE 1.8.19](#step-1-install-arduino-ide-1819)
 - [Step 2: Configure Boards Manager Download Access](#step-2-configure-boards-manager-download-access)
 - [Step 3: Install Intel Curie Boards Core](#step-3-install-intel-curie-boards-core)
@@ -16,6 +17,7 @@
 - [Step 6: Update Firmware](#step-6-update-firmware)
 - [Step 7: Upload First Example (Blink)](#step-7-upload-first-example-blink)
 - [Step 8: Try Arduino 101 Feature Examples](#step-8-try-arduino-101-feature-examples)
+- [Required Libraries for Project Sketches](#required-libraries-for-project-sketches)
 - [Troubleshooting](#troubleshooting)
 - [Using VS Code For Sketch Editing](#using-vs-code-for-sketch-editing)
 - [Optional: IDE 2.x Usage](#optional-ide-2x-usage)
@@ -39,6 +41,23 @@ Why:
 - Arduino 101 is a retired board.
 - Intel Curie tooling is deprecated and most reliable in IDE 1.8.x.
 - Firmware updater flow is more consistent in IDE 1.8.x.
+
+## IDE Support Matrix for This Project
+
+Use Arduino IDE 1.8.19 for Arduino 101. Use Arduino IDE 2.x for the other boards.
+
+| Hardware family | Preferred IDE | Policy |
+| --- | --- | --- |
+| Arduino 101 (Intel Curie) | Arduino IDE 1.8.19 | Required for setup, firmware updates, and normal uploads. |
+| ESP32 | Arduino IDE 2.x (latest stable) | Recommended default workflow. |
+| ESP8266 | Arduino IDE 2.x (latest stable) | Recommended default workflow. |
+| UNO and Nano class boards | Arduino IDE 2.x (latest stable) | Recommended default workflow. |
+
+Practical recommendation:
+
+- Keep both IDE versions installed side-by-side.
+- Reserve IDE 1.8.19 for Arduino 101 only.
+- Use IDE 2.x for all non-101 development in this repo.
 
 ## Step 1: Install Arduino IDE 1.8.19
 
@@ -125,6 +144,26 @@ while (!Serial) {
 }
 ```
 
+## Required Libraries for Project Sketches
+
+Install these in Arduino IDE using Sketch > Include Library > Manage Libraries.
+
+| Sketch | Library | Why |
+| --- | --- | --- |
+| ESP32 node (`components/esp32/ESP32_Node/ESP32_Node.ino`) | `PubSubClient` by Nick O'Leary | Provides `PubSubClient.h` for MQTT. |
+| ESP32 node (`components/esp32/ESP32_Node/ESP32_Node.ino`) | `IRremote` by Arduino-IRremote | Provides `IRremote.hpp` for KY-022/TL1838/VS1838B IR decode. |
+| ESP8266 node (`components/esp8266/ESP8266_Node.ino`) | `PubSubClient` by Nick O'Leary | Provides `PubSubClient.h` for MQTT. |
+| ESP8266 node (`components/esp8266/ESP8266_Node.ino`) | `IRremote` by Arduino-IRremote | Provides `IRremote.hpp` for KY-022/TL1838/VS1838B IR decode. |
+| UNO node (`components/uno/UNO_Node/UNO_Node.ino`) | `IRremote` by Arduino-IRremote | Provides `IRremote.hpp` for KY-022/TL1838/VS1838B IR decode. |
+| Arduino 101 RF node (`components/arduino101/Arduino101_Node/Arduino101_Node.ino`) | `rc-switch` by sui77 | Provides RF receive/decode support. |
+
+Notes:
+
+- `WiFi.h` on ESP32 is from the ESP32 board package.
+- `ESP8266WiFi.h` on ESP8266 is from the ESP8266 board package.
+- If compile output says `PubSubClient.h: No such file or directory`, install `PubSubClient` first.
+- If compile output says `IRremote.hpp: No such file or directory`, install `IRremote` first.
+
 ## Troubleshooting
 
 ### Board not listed in Ports
@@ -164,3 +203,5 @@ This keeps the editor flexible while preserving the most reliable upload path fo
 
 After successful setup and firmware update in IDE 1.8.19, you can try IDE 2.x for editing/uploading.
 If uploads fail in 2.x, return to IDE 1.8.19 for this board.
+
+For this project overall, IDE 2.x is the default for ESP32, ESP8266, UNO, and Nano class nodes.
