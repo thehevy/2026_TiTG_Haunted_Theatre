@@ -13,9 +13,21 @@ constexpr unsigned long PULSE_MS = 250;
 constexpr unsigned long LOCKOUT_MS = 15000;
 constexpr unsigned long INPUT_DEBOUNCE_MS = 50;
 constexpr unsigned long IR_DEBOUNCE_MS = 250;
-constexpr uint8_t IR_COMMAND_RELAY1 = 0x45;
-constexpr uint8_t IR_COMMAND_RELAY2 = 0x46;
-constexpr uint8_t IR_COMMAND_RELAY3 = 0x47;
+constexpr unsigned long IR_LOCKOUT_MODE_NONE_MS = 0;
+constexpr unsigned long IR_LOCKOUT_MODE_5S_MS = 5000;
+constexpr unsigned long IR_LOCKOUT_MODE_15S_MS = 15000;
+
+constexpr uint8_t IR_CODE_A1 = 0x0C;
+constexpr uint8_t IR_CODE_A2 = 0x18;
+constexpr uint8_t IR_CODE_A3 = 0x5E;
+constexpr uint8_t IR_CODE_A4 = 0x08;
+constexpr uint8_t IR_CODE_A5 = 0x1C;
+constexpr uint8_t IR_CODE_A6 = 0x5A;
+constexpr uint8_t IR_CODE_A7 = 0x42;
+constexpr uint8_t IR_CODE_M1 = 0x07;
+constexpr uint8_t IR_CODE_M2 = 0x15;
+constexpr uint8_t IR_CODE_M3 = 0x09;
+constexpr uint8_t IR_CODE_POWER = 0x45;
 
 bool relayState[3] = {false, false, false};
 unsigned long relayOffAt[3] = {0, 0, 0};
@@ -26,6 +38,10 @@ bool lastPositiveActive = false;
 bool lastNegativeActive = false;
 unsigned long lastHeartbeatAt = 0;
 unsigned long lastIrTriggerAt = 0;
+unsigned long irActionLockoutMs = IR_LOCKOUT_MODE_15S_MS;
+unsigned long irActionLockoutUntil = 0;
+int lastRelay2LockoutCountdownSeconds = -1;
+int lastIrLockoutCountdownSeconds = -1;
 uint8_t lastIrCommand = 0;
 uint32_t lastIrRawData = 0;
 
@@ -62,9 +78,65 @@ void printHeader() {
   Serial.println(NEGATIVE_TRIGGER_PIN);
   Serial.print(F("IR receiver input: D"));
   Serial.println(IR_RECEIVER_PIN);
-  Serial.println(F("IR commands: 1->relay1 pulse, 2->relay2 pulse, 3->relay3 toggle"));
+  Serial.println(F("IR map: A1/A2/A3 pulse D4/D5/D6, A4/A5/A6 toggle D4/D5/D6"));
+  Serial.println(F("IR map: A7 pulse all, M1/M2/M3 lockout none/5s/15s, POWER reprint header"));
   Serial.println(F("Serial debug command: i -> print last IR code"));
   Serial.println(F("Ready."));
+}
+
+bool isIrLockoutActive(unsigned long now) {
+  return irActionLockoutUntil != 0 && static_cast<long>(now - irActionLockoutUntil) < 0;
+}
+
+void startIrLockoutIfEnabled(unsigned long now) {
+  if (irActionLockoutMs == 0) {
+    irActionLockoutUntil = 0;
+    return;
+  }
+
+  irActionLockoutUntil = now + irActionLockoutMs;
+}
+
+void setIrLockoutMode(unsigned long durationMs) {
+  irActionLockoutMs = durationMs;
+  irActionLockoutUntil = 0;
+
+  Serial.print(F("IR lockout mode set to: "));
+  if (durationMs == 0) {
+    Serial.println(F("none"));
+  } else {
+    Serial.print(durationMs / 1000);
+    Serial.println(F(" seconds"));
+  }
+}
+
+void pulseAllRelays() {
+  pulseRelay(0, RELAY1_PIN, PULSE_MS);
+  pulseRelay(1, RELAY2_PIN, PULSE_MS);
+  pulseRelay(2, RELAY3_PIN, PULSE_MS);
+}
+
+void printLockoutCountdown(const __FlashStringHelper *label, unsigned long now, unsigned long lockoutUntil,
+                           int &lastPrintedSeconds) {
+  if (lockoutUntil == 0 || static_cast<long>(now - lockoutUntil) >= 0) {
+    if (lastPrintedSeconds != -1) {
+      Serial.print(label);
+      Serial.println(F(" lockout cleared"));
+      lastPrintedSeconds = -1;
+    }
+    return;
+  }
+
+  unsigned long remainingMs = lockoutUntil - now;
+  int remainingSeconds = static_cast<int>((remainingMs + 999) / 1000);
+
+  if (remainingSeconds != lastPrintedSeconds) {
+    Serial.print(label);
+    Serial.print(F(" lockout remaining: "));
+    Serial.print(remainingSeconds);
+    Serial.println(F("s"));
+    lastPrintedSeconds = remainingSeconds;
+  }
 }
 
 void printLastIrDebug() {
@@ -92,17 +164,37 @@ void handleIrInput(unsigned long now) {
   Serial.println(command, HEX);
 
   if (!isRepeat && (now - lastIrTriggerAt >= IR_DEBOUNCE_MS)) {
-    if (command == IR_COMMAND_RELAY1) {
-      pulseRelay(0, RELAY1_PIN, PULSE_MS);
-    } else if (command == IR_COMMAND_RELAY2) {
-      if (relay2LockoutUntil == 0) {
-        pulseRelay(1, RELAY2_PIN, PULSE_MS);
-        relay2LockoutUntil = millis() + LOCKOUT_MS;
-      } else {
-        Serial.println(F("IR relay2 command ignored during lockout"));
-      }
-    } else if (command == IR_COMMAND_RELAY3) {
+    if (command == IR_CODE_M1) {
+      setIrLockoutMode(IR_LOCKOUT_MODE_NONE_MS);
+    } else if (command == IR_CODE_M2) {
+      setIrLockoutMode(IR_LOCKOUT_MODE_5S_MS);
+    } else if (command == IR_CODE_M3) {
+      setIrLockoutMode(IR_LOCKOUT_MODE_15S_MS);
+    } else if (command == IR_CODE_POWER) {
+      Serial.println(F("IR POWER received: reprinting header."));
+      printHeader();
+    } else if (command == IR_CODE_A4) {
+      toggleRelay(0, RELAY1_PIN);
+    } else if (command == IR_CODE_A5) {
+      toggleRelay(1, RELAY2_PIN);
+    } else if (command == IR_CODE_A6) {
       toggleRelay(2, RELAY3_PIN);
+    } else if (command == IR_CODE_A1 || command == IR_CODE_A2 || command == IR_CODE_A3 || command == IR_CODE_A7) {
+      if (isIrLockoutActive(now)) {
+        Serial.println(F("IR pulse action ignored during lockout"));
+      } else if (command == IR_CODE_A1) {
+        pulseRelay(0, RELAY1_PIN, PULSE_MS);
+        startIrLockoutIfEnabled(now);
+      } else if (command == IR_CODE_A2) {
+        pulseRelay(1, RELAY2_PIN, PULSE_MS);
+        startIrLockoutIfEnabled(now);
+      } else if (command == IR_CODE_A3) {
+        pulseRelay(2, RELAY3_PIN, PULSE_MS);
+        startIrLockoutIfEnabled(now);
+      } else if (command == IR_CODE_A7) {
+        pulseAllRelays();
+        startIrLockoutIfEnabled(now);
+      }
     }
 
     lastIrTriggerAt = now;
@@ -190,6 +282,9 @@ void loop() {
   handleInputTriggers(now);
   handleIrInput(now);
 
+  printLockoutCountdown(F("IR pulse action"), now, irActionLockoutUntil, lastIrLockoutCountdownSeconds);
+  printLockoutCountdown(F("Relay2 input"), now, relay2LockoutUntil, lastRelay2LockoutCountdownSeconds);
+
   if (now - lastHeartbeatAt >= 5000) {
     lastHeartbeatAt = now;
     Serial.println(F("Heartbeat: node running"));
@@ -197,6 +292,10 @@ void loop() {
 
   if (timeReached(now, relay2LockoutUntil)) {
     relay2LockoutUntil = 0;
+  }
+
+  if (timeReached(now, irActionLockoutUntil)) {
+    irActionLockoutUntil = 0;
   }
 
   readSerialCommands();

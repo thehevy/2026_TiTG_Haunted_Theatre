@@ -55,7 +55,26 @@ Target sketch:
 3. Connect KY-022 signal to UNO D2.
 4. Keep relay and trigger wiring unchanged.
 
-Note: This node sketch currently does not decode IR. Add an IR decode library and action mapping before expecting IR-triggered outputs.
+### IR Command Map
+
+| Remote Button | IR Code | Action                         |
+| ------------- | ------- | ------------------------------ |
+| A1            | `0x0C`  | Pulse D4                       |
+| A2            | `0x18`  | Pulse D5                       |
+| A3            | `0x5E`  | Pulse D6                       |
+| A4            | `0x08`  | Toggle D4                      |
+| A5            | `0x1C`  | Toggle D5                      |
+| A6            | `0x5A`  | Toggle D6                      |
+| A7            | `0x42`  | Pulse D4, D5, and D6           |
+| M1            | `0x07`  | Set lockout mode to none       |
+| M2            | `0x15`  | Set lockout mode to 5 seconds  |
+| M3            | `0x09`  | Set lockout mode to 15 seconds |
+| Power         | `0x45`  | Reprint header text to Serial  |
+
+Lockout behavior:
+
+- Lockout mode applies to IR pulse actions (A1, A2, A3, A7).
+- Toggle actions (A4, A5, A6) ignore lockout and always execute.
 
 ## Relay Logic
 
