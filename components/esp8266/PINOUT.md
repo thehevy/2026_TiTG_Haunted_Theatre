@@ -7,6 +7,9 @@ Target sketch:
 
 - `components/esp8266/ESP8266_Node.ino`
 
+Package Download Location:
+<https://arduino.esp8266.com/stable/package_esp8266com_index.json>
+
 ## Function Map
 
 | Function               | ESP8266 Pin | Typical NodeMCU Label                                             |
@@ -34,10 +37,12 @@ Target sketch:
 
 ## Board Power Input (Onboard Connector)
 
-| Input Path           | Connector Available                                  | Minimum Input | Maximum Input | Notes                                                                            |
-| -------------------- | ---------------------------------------------------- | ------------- | ------------- | -------------------------------------------------------------------------------- |
-| USB power            | Yes (typically Micro-USB on NodeMCU class boards)    | 4.75V         | 5.25V         | Preferred for programming and stable operation.                                  |
-| 5V or VIN header pin | Usually available on dev boards                      | 4.8V          | 5.5V          | Use regulated 5V input unless your board vendor documents a different VIN range. |
+The acceptable ESP8266 board input power range is approximately 4.75V to 5.5V, depending on the power path used.
+
+| Input Path           | Connector Available                                  | Minimum Input Voltage | Maximum Input Voltage | Notes                                                                            |
+| -------------------- | ---------------------------------------------------- | --------------------- | --------------------- | -------------------------------------------------------------------------------- |
+| USB power            | Yes (typically Micro-USB on NodeMCU class boards)    | 4.75V                 | 5.25V                 | Preferred for programming and stable operation.                                  |
+| 5V or VIN header pin | Usually available on dev boards                      | 4.8V                  | 5.5V                  | Use regulated 5V input unless your board vendor documents a different VIN range. |
 
 ## Optional IR Receiver (KY-022 / TL1838 / VS1838B)
 

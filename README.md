@@ -6,6 +6,7 @@
 Centralized haunted-house control project for mixed hardware:
 
 - Arduino 101 (Intel Curie)
+- ESP-01 bare module
 - ESP32
 - ESP8266
 - Arduino UNO
@@ -25,6 +26,7 @@ Use this matrix when selecting Arduino IDE versions for each hardware family.
 | Component | Preferred IDE | Status | Notes |
 | --- | --- | --- | --- |
 | Arduino 101 (Intel Curie) | Arduino IDE 1.8.19 | Required | Use 1.8.19 for firmware updates and uploads. Curie tooling is legacy. |
+| ESP-01 bare module nodes | Arduino IDE 2.x (latest stable) | Recommended | Use a 3.3V serial adapter and keep GPIO0/GPIO2 constraints in mind when wiring. |
 | ESP32 nodes | Arduino IDE 2.x (latest stable) | Recommended | Keep ESP32 board package current and use Library Manager for dependencies. |
 | ESP8266 nodes | Arduino IDE 2.x (latest stable) | Recommended | Keep ESP8266 board package current and use Library Manager for dependencies. |
 | UNO and Nano class nodes | Arduino IDE 2.x (latest stable) | Recommended | Standard AVR workflows are stable in IDE 2.x. |
@@ -40,6 +42,9 @@ Recommended local setup:
 - `components/arduino101/Arduino101_Node/Arduino101_Node.ino`
   - Arduino 101 RF-driven relay node (pulse, lockout pulse, toggle)
   - Pinout: `components/arduino101/PINOUT.md`
+- `components/esp01/ESP01_Node.ino`
+  - ESP-01 IR-trigger relay node with 1s pulse and 15s cooldown
+  - Pinout: `components/esp01/PINOUT.md`
 - `components/esp32/ESP32_Node.ino`
   - ESP32 MQTT relay node
   - Pinout: `components/esp32/PINOUT.md`
@@ -57,6 +62,15 @@ Recommended local setup:
   - Full architecture and rollout plan
 
 ## Quick Start
+
+### 0. ESP-01 IR Trigger Node
+
+1. Open `components/esp01/ESP01_Node.ino` in Arduino IDE 2.x.
+2. Review wiring in `components/esp01/PINOUT.md`.
+3. Set board to Generic ESP8266 Module or the matching ESP-01 board package profile.
+4. Select the correct serial adapter port for the ESP-01 programmer.
+5. Upload and confirm the relay pulses for 1 second after each valid IR edge.
+6. Verify the 15 second cooldown by triggering the sensor twice in rapid succession.
 
 ### 1. Arduino 101 Node
 
@@ -105,6 +119,18 @@ Current node command strings:
 - `relay1:pulse`
 - `relay2:pulse`
 - `relay3:toggle`
+
+## Quick Wiring Checklist for ESP-01
+
+- Sensor signal -> GPIO2 (active HIGH)
+- Sensor GND -> ESP-01 GND
+- Sensor VCC -> ESP-01 3.3V
+- Relay control -> GPIO0
+- Relay module VCC -> external 5V supply
+- Relay module GND -> common GND with ESP-01
+- Ensure the relay board is compatible with active LOW output logic
+- Verify GPIO0 is not being held low during reset by the relay board or wiring
+- Use a 3.3V USB serial adapter for programming the bare ESP-01 module
 
 ## Required Libraries
 

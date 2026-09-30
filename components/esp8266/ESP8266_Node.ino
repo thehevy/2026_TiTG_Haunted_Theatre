@@ -76,6 +76,34 @@ void printHeader() {
   Serial.println(F("Ready."));
 }
 
+const __FlashStringHelper *wifiStatusString() {
+  switch (WiFi.status()) {
+    case WL_IDLE_STATUS: return F("IDLE");
+    case WL_NO_SSID_AVAIL: return F("NO_SSID");
+    case WL_SCAN_COMPLETED: return F("SCAN_DONE");
+    case WL_CONNECTED: return F("CONNECTED");
+    case WL_CONNECT_FAILED: return F("CONNECT_FAILED");
+    case WL_CONNECTION_LOST: return F("CONNECTION_LOST");
+    case WL_DISCONNECTED: return F("DISCONNECTED");
+    default: return F("UNKNOWN");
+  }
+}
+
+void printHealthStatus() {
+  Serial.print(F("Health: WiFi="));
+  Serial.print(wifiStatusString());
+  Serial.print(F(" | MQTT="));
+  Serial.print(mqttClient.connected() ? F("CONNECTED") : F("DISCONNECTED"));
+  Serial.print(F(" | relay1=");
+  Serial.print(relayState[0] ? F("ON") : F("OFF"));
+  Serial.print(F(" | relay2="));
+  Serial.print(relayState[1] ? F("ON") : F("OFF"));
+  Serial.print(F(" | relay3="));
+  Serial.print(relayState[2] ? F("ON") : F("OFF"));
+  Serial.print(F(" | lockout="));
+  Serial.println(relay2LockoutUntil != 0 ? F("ACTIVE") : F("READY"));
+}
+
 void printLastIrDebug() {
   Serial.print(F("Last IR command: 0x"));
   if (lastIrCommand < 0x10) {
@@ -247,6 +275,7 @@ void loop() {
   if (now - lastHeartbeatAt >= 5000) {
     lastHeartbeatAt = now;
     Serial.println(F("Heartbeat: node running"));
+    printHealthStatus();
   }
 
   if (timeReached(now, relay2LockoutUntil)) {
