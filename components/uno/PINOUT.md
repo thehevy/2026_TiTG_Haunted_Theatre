@@ -1,37 +1,38 @@
 # Arduino UNO Pinout Guide
 
-**Created:** 2026-08-07
-**Last Updated:** 2026-08-14
+**Created:** 2026-08-07  
+**Last Updated:** 2026-10-03
 
 Target sketch:
 
-- `components/uno/UNO_Node.ino`
+- `components/uno/UNO_Node/UNO_Node.ino`
 
 ## Function Map
 
-| Function               | UNO Pin | Trigger                                                              |
-| ---------------------- | ------- | -------------------------------------------------------------------- |
-| Relay 1 output         | D4      | Serial command `1` (pulse) or `a` (toggle)                           |
-| Relay 2 output         | D5      | Serial command `2` (pulse) or `b` (toggle)                           |
-| Relay 3 output         | D6      | Serial command `3` (pulse) or `c` (toggle)                           |
-| Positive trigger input | D7      | Active HIGH input                                                    |
-| Negative trigger input | D8      | Active LOW with pull-up. Also reprints header text to Serial.        |
+| Function               | UNO Pin | Notes                                                                                   |
+| ---------------------- | ------- | --------------------------------------------------------------------------------------- |
+| IR programming input    | D2      | Used for IR programming and option selection. Code `0x00` triggers Relay 1 only.        |
+| Positive trigger input | D7      | Active HIGH. Keeps Relay 2 active only while D7 remains HIGH.                           |
+| Negative trigger input | D8      | Active LOW. Keeps Relay 3 active only while D8 remains LOW. Use pull-up or internal pull-up. |
+| Relay 1 output         | D4      | Pulse output for the IR `0x00` trigger.                                               |
+| Relay 2 output         | D5      | Held active while D7 stays HIGH.                                                       |
+| Relay 3 output         | D6      | Held active while D8 stays LOW.                                                        |
 
 ## Power and Ground
 
-| Device                         | UNO Connection               |
-| ------------------------------ | ---------------------------- |
-| Relay module VCC               | External 5V recommended      |
-| Relay module GND               | Common GND with UNO          |
-| Positive trigger source GND    | Common GND with UNO          |
-| Negative trigger switch/sensor | Connect between D8 and GND   |
+| Device                         | UNO Connection             |
+| ------------------------------ | -------------------------- |
+| Relay module VCC               | External 5V recommended    |
+| Relay module GND               | Common GND with UNO        |
+| Positive trigger source GND    | Common GND with UNO        |
+| Negative trigger switch/sensor | Connect between D8 and GND |
 
 ## Board Power Input (Onboard Connector)
 
-| Input Path        | Connector Available                 | Minimum Input            | Maximum Input             | Notes                                                                             |
-| ----------------- | ----------------------------------- | ------------------------ | ------------------------- | --------------------------------------------------------------------------------- |
-| USB power         | Yes (USB-B on UNO R3 class boards)  | 4.75V                    | 5.25V                     | Preferred for bench setup and programming.                                        |
-| Barrel jack / VIN | Yes                                 | 7V (recommended minimum) | 12V (recommended maximum) | Board family limit is wider, but 7V to 12V is the practical operating range.      |
+| Input Path        | Connector Available                 | Minimum Input            | Maximum Input             | Notes                                                                            |
+| ----------------- | ----------------------------------- | ------------------------ | ------------------------- | -------------------------------------------------------------------------------- |
+| USB power         | Yes (USB-B on UNO R3 class boards)  | 4.75V                    | 5.25V                     | Preferred for bench setup and programming.                                       |
+| Barrel jack / VIN | Yes                                 | 7V (recommended minimum) | 12V (recommended maximum) | Board family limit is wider, but 7V to 12V is the practical operating range.   |
 
 ## Optional IR Receiver (KY-022 / TL1838 / VS1838B)
 
@@ -44,48 +45,56 @@ Target sketch:
 ### Required Components
 
 - 1x Arduino UNO or Nano (ATmega328P)
+- 1x 3-channel relay module (or three single-relay modules)
 - 1x KY-022 (TL1838/VS1838B) IR receiver module
 - 1x IR remote transmitter
-- 3x female-to-female jumper wires
-
-### Wiring
-
-1. Connect KY-022 GND to UNO GND.
-2. Connect KY-022 VCC to UNO 5V.
-3. Connect KY-022 signal to UNO D2.
-4. Keep relay and trigger wiring unchanged.
+- 1x 10k pull-down resistor for D7 so the positive trigger line stays LOW by default
+- 1x 10k pull-up resistor for D8 if needed
+- Jumper wires and a common ground
 
 ### IR Command Map
 
-| Remote Button | IR Code | Action                         |
-| ------------- | ------- | ------------------------------ |
-| A1            | `0x0C`  | Pulse D4                       |
-| A2            | `0x18`  | Pulse D5                       |
-| A3            | `0x5E`  | Pulse D6                       |
-| A4            | `0x08`  | Toggle D4                      |
-| A5            | `0x1C`  | Toggle D5                      |
-| A6            | `0x5A`  | Toggle D6                      |
-| A7            | `0x42`  | Pulse D4, D5, and D6           |
-| M1            | `0x07`  | Set lockout mode to none       |
-| M2            | `0x15`  | Set lockout mode to 5 seconds  |
-| M3            | `0x09`  | Set lockout mode to 15 seconds |
-| Power         | `0x45`  | Reprint header text to Serial  |
+| Remote Button | IR Code | Action          |
+| ------------- | ------- | --------------- |
+| `0`           | `0x00`  | Pulse D4        |
 
-Lockout behavior:
+## Required Components and Resistor Guidance
 
-- Lockout mode applies to IR pulse actions (A1, A2, A3, A7).
-- Toggle actions (A4, A5, A6) ignore lockout and always execute.
+- 1x Arduino UNO or Nano (ATmega328P)
+- 1x 3-channel relay module (or three single-relay modules)
+- 1x KY-022 (TL1838/VS1838B) IR receiver module
+- 1x IR remote transmitter
+- 1x 10k pull-down resistor for D7 so the line stays LOW by default
+- 1x 10k pull-up resistor for D8 if the trigger source is open collector or floating
+- Jumper wires, terminal blocks, and a stable common ground
+
+### Wiring notes for safe signal conditioning
+
+1. Connect the positive trigger source to D7 through a proper signal path, and add a 10k resistor from D7 to GND so the line stays LOW until a valid HIGH signal is present.
+2. Do not tie D7 directly to 5V without a resistor path to ground; this can leave the line floating during reset and can stress the signal source.
+3. For the negative trigger, wire D8 to a pull-up or use the internal pull-up, and switch the sensor to ground only when active.
+4. Keep the relay coil supply and the Arduino ground common, but do not power the relay coil from the same pin supply without appropriate flyback protection.
 
 ## Relay Logic
 
-- The sketch is configured for **active LOW** relays.
-- If your relay board is active HIGH, set `RELAY_ACTIVE_LOW` to `false`.
+- The sketch is configured for active LOW relays.
+- If your relay board is active HIGH, set `RELAY_ACTIVE_LOW` to `false` in the sketch.
+- For the current trigger model, D7 and D8 behave as held-state triggers rather than momentary pulses.
+
+## Validation
+
+1. Open the Serial Monitor at `115200`.
+2. Press reset and confirm the startup banner.
+3. Drive D7 HIGH and verify the sketch reports `POSITIVE -> Relay 2 active while D7 stays HIGH`.
+4. Release D7 and verify Relay 2 turns off.
+5. Pull D8 LOW and verify the sketch reports `NEGATIVE -> Relay 3 active while D8 stays LOW`.
+6. Release D8 and verify Relay 3 turns off.
+7. Transmit IR code `0x00` and verify Relay 1 pulses once.
+8. Confirm the startup banner shows `Default timeout: none`.
 
 ## Serial Control
 
 - Baud: `115200`
 - Header and log text is printed on USB Serial (`Serial`), not on a GPIO pin.
-- Pulling D8 LOW reprints the header.
-- Send one character commands from Serial Monitor:
-  - `1`, `2`, `3` for pulse
-  - `a`, `b`, `c` for toggle
+- `1` pulses Relay 1, `2` holds Relay 2, and `3` holds Relay 3 for test use.
+- `i` prints the last IR command and raw code.

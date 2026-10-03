@@ -1,6 +1,6 @@
 constexpr uint8_t IR_SENSOR_PIN = 2;    // GPIO2 on ESP-01, active HIGH
-constexpr uint8_t RELAY_PIN = 0;        // GPIO0 on ESP-01, active LOW relay driver
-constexpr bool RELAY_ACTIVE_LOW = true;
+constexpr uint8_t RELAY_PIN = 0;        // GPIO0 on ESP-01, relay driver output goes HIGH on trigger
+constexpr bool RELAY_ACTIVE_LOW = false;
 constexpr uint32_t TRIGGER_PULSE_MS = 1000;
 constexpr uint32_t COOLDOWN_MS = 15000;
 constexpr uint32_t DEBOUNCE_MS = 25;

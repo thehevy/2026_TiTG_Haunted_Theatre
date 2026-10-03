@@ -12,7 +12,7 @@ Target sketch:
 | Function        | ESP-01 Pin | Notes                                                                                       |
 | --------------- | ---------- | ------------------------------------------------------------------------------------------- |
 | IR sensor input | GPIO2      | Active HIGH input; sensor output should be pulled to VCC when active.                       |
-| Relay output    | GPIO0      | Active LOW relay driver. Relay pulses HIGH for 1 second on trigger if `RELAY_ACTIVE_LOW` is `true`. |
+| Relay output    | GPIO0      | Active HIGH relay driver. GPIO0 goes HIGH for 1 second on trigger in the current sketch. |
 | Sensor power    | 3V3        | Connect IR sensor VCC here.                                                                 |
 | Common ground   | GND        | Shared ground between ESP-01, sensor, and relay board.                                      |
 
@@ -54,8 +54,8 @@ Target sketch:
 
 ## Relay Logic
 
-- The sketch is configured for active LOW relays.
-- If your relay board is active HIGH, set `RELAY_ACTIVE_LOW` to `false` in the sketch.
+- The sketch is configured for active HIGH relay drive on GPIO0.
+- If your relay board is active LOW instead, set `RELAY_ACTIVE_LOW` to `true` in the sketch.
 
 ## Important ESP-01 Considerations
 

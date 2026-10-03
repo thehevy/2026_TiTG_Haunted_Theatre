@@ -9,14 +9,14 @@ Target sketch:
 
 ## Function Map
 
-| Function               | Arduino 101 Pin | Notes                                                                                                                   |
-| ---------------------- | --------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| RF receiver data       | D2              | Must be interrupt-capable for `enableReceive`.                                                                          |
-| Positive trigger input | D7              | Active HIGH input. Wire external source to drive HIGH on trigger.                                                       |
-| Negative trigger input | D8              | Active LOW input with internal pull-up enabled. Trigger by pulling to GND. Also reprints header text to Serial Monitor. |
-| Relay 1 output         | D4              | Momentary pulse trigger.                                                                                                |
-| Relay 2 output         | D5              | Momentary pulse with 15s lockout.                                                                                       |
-| Relay 3 output         | D6              | Toggle output.                                                                                                          |
+| Function               | Arduino 101 Pin | Notes                                                                                                                       |
+| ---------------------- | --------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| RF receiver data       | D2              | Used for RF configuration/programming. When code `0x00` is received, it triggers Relay 1 only.                             |
+| Positive trigger input | D7              | Active HIGH input. Keeps Relay 2 active only while D7 remains HIGH. Use a pull-down resistor so it stays LOW by default. |
+| Negative trigger input | D8              | Active LOW input. Keeps Relay 3 active only while D8 remains LOW. Use a pull-up resistor or the internal pull-up.          |
+| Relay 1 output         | D4              | Single momentary pulse output for the RF `0x00` trigger and any configured pulse code.                                    |
+| Relay 2 output         | D5              | Held active while D7 is HIGH. Not used for RF pulse timing in the current sketch.                                        |
+| Relay 3 output         | D6              | Held active while D8 is LOW. Not used for RF pulse timing in the current sketch.                                         |
 
 ## Serial Output Path (Important)
 
@@ -67,17 +67,22 @@ Target sketch:
 
 Note: This node sketch currently does not decode IR. Add an IR library and handler logic before expecting trigger actions from the KY-022.
 
-## Example Components Required
+## Required Components and Resistor Guidance
 
 - 1x Arduino/Genuino 101
 - 1x 315/433 MHz RF receiver module (digital data output)
 - 1x 3-channel relay module (or three single-relay modules)
 - 1x 5V DC power supply sized for relay coil current
-- 2x trigger inputs:
-  - Positive trigger source for D7 (active HIGH)
-  - Negative trigger switch/sensor for D8 to GND (active LOW)
-- Jumper wires and terminal blocks as needed
-- Optional: 1x 10k resistor for external pull-down on D7 if source can float
+- 1x 10k pull-down resistor for D7 to keep the positive trigger line LOW by default
+- 1x 10k pull-up resistor for D8 if you are not relying on the internal pull-up or if the triggering device is open collector
+- Jumper wires, terminal blocks, and a stable common ground
+
+### Wiring notes for safe signal conditioning
+
+1. Connect the positive trigger source to D7 through a proper signal path, and add a 10k resistor from D7 to GND so the input stays LOW until a real HIGH signal is present.
+2. Do not tie D7 directly to 5V without a resistor path to ground; this can short the signal source or leave the line floating during reset.
+3. For the negative trigger, wire D8 to a pull-up or use the internal pull-up, and switch the sensor to ground only when active.
+4. Keep the relay coil supply and the Arduino ground common, but do not power the relay coil from the same pin supply without appropriate flyback protection.
 
 ## Example Layout Wiring Diagram
 
@@ -111,23 +116,27 @@ flowchart LR
 
 ### Signal Summary
 
-- D2: RF receiver data input
-- D7: positive trigger input, active HIGH
-- D8: negative trigger input, active LOW with internal pull-up
-- D4: relay 1 pulse output
-- D5: relay 2 pulse output with 15-second lockout
-- D6: relay 3 toggle output
+- D2: RF receiver data input used for programming.
+- D7: positive trigger input, active HIGH. D7 drives Relay 2 only while held HIGH.
+- D8: negative trigger input, active LOW. D8 drives Relay 3 only while held LOW.
+- D4: relay 1 pulse output for the RF `0x00` trigger and any configured pulse code.
+- D5: relay 2 output, active while D7 remains HIGH.
+- D6: relay 3 output, active while D8 remains LOW.
 
 ## Relay Logic
 
 - The sketch is configured for **active LOW** relays.
 - `LOW` on D4/D5/D6 energizes the relay.
 - If your relay board is active HIGH, change `RELAY_ACTIVE_LOW` to `false`.
+- The current trigger model is level-based for D7 and D8, not pulse-based.
 
 ## Validation
 
 1. Open Serial Monitor at 115200.
 2. Press reset and confirm startup banner and heartbeat messages.
-3. Activate D7 and verify `Input trigger: POSITIVE` message.
-4. Pull D8 to GND and verify `Input trigger: NEGATIVE` message.
-5. Trigger RF transmitter and verify `RF received:` messages.
+3. Drive D7 HIGH and verify `Input trigger: POSITIVE -> Relay 2 active while D7 stays HIGH` message.
+4. Release D7 and verify Relay 2 turns off.
+5. Pull D8 LOW and verify `Input trigger: NEGATIVE -> Relay 3 active while D8 stays LOW` message.
+6. Release D8 and verify Relay 3 turns off.
+7. Transmit RF code `0x00` and verify Relay 1 pulses once.
+8. Confirm the startup banner shows `Default RF timeout: none`.

@@ -9,13 +9,11 @@ constexpr uint8_t POSITIVE_TRIGGER_PIN = D6;
 constexpr uint8_t NEGATIVE_TRIGGER_PIN = D7;
 constexpr uint8_t IR_RECEIVER_PIN = D4;
 constexpr bool RELAY_ACTIVE_LOW = true;
+
 constexpr unsigned long PULSE_MS = 250;
-constexpr unsigned long LOCKOUT_MS = 15000;
 constexpr unsigned long INPUT_DEBOUNCE_MS = 50;
 constexpr unsigned long IR_DEBOUNCE_MS = 250;
-constexpr uint8_t IR_COMMAND_RELAY1 = 0x45;
-constexpr uint8_t IR_COMMAND_RELAY2 = 0x46;
-constexpr uint8_t IR_COMMAND_RELAY3 = 0x47;
+constexpr uint8_t IR_CODE_0 = 0x00;
 
 const char *WIFI_SSID = "YOUR_WIFI_SSID";
 const char *WIFI_PASSWORD = "YOUR_WIFI_PASSWORD";
@@ -28,7 +26,7 @@ PubSubClient mqttClient(wifiClient);
 
 bool relayState[3] = {false, false, false};
 unsigned long relayOffAt[3] = {0, 0, 0};
-unsigned long relay2LockoutUntil = 0;
+unsigned long relay1OffAt = 0;
 unsigned long lastPositiveTriggerAt = 0;
 unsigned long lastNegativeTriggerAt = 0;
 bool lastPositiveActive = false;
@@ -44,7 +42,18 @@ void setRelay(uint8_t pin, bool on) {
 
 void pulseRelay(uint8_t index, uint8_t pin, unsigned long durationMs) {
   setRelay(pin, true);
+  relayState[index] = true;
   relayOffAt[index] = millis() + durationMs;
+}
+
+void holdRelayActive(uint8_t index, uint8_t pin) {
+  relayState[index] = true;
+  setRelay(pin, true);
+}
+
+void releaseRelay(uint8_t index, uint8_t pin) {
+  relayState[index] = false;
+  setRelay(pin, false);
 }
 
 void toggleRelay(uint8_t index, uint8_t pin) {
@@ -58,21 +67,28 @@ bool timeReached(unsigned long now, unsigned long target) {
 
 void printHeader() {
   Serial.println(F("=== ESP8266 Node ==="));
-  Serial.println(F("Purpose: MQTT, IR, and local trigger relay controller"));
-  Serial.print(F("Relay 1 pulse pin: "));
-  Serial.println(RELAY1_PIN);
-  Serial.print(F("Relay 2 pulse+lockout pin: "));
-  Serial.println(RELAY2_PIN);
-  Serial.print(F("Relay 3 toggle pin: "));
-  Serial.println(RELAY3_PIN);
-  Serial.print(F("Positive trigger input (active HIGH): "));
-  Serial.println(POSITIVE_TRIGGER_PIN);
-  Serial.print(F("Negative trigger input (active LOW): "));
-  Serial.println(NEGATIVE_TRIGGER_PIN);
-  Serial.print(F("IR receiver input: "));
+  Serial.println(F("Purpose: MQTT, IR, and local trigger relay controller."));
+  Serial.print(F("Device ID: "));
+  Serial.println(DEVICE_ID);
+  Serial.println(F("Input pins:"));
+  Serial.print(F("  IR receiver data: GPIO"));
   Serial.println(IR_RECEIVER_PIN);
-  Serial.println(F("IR commands: 1->relay1 pulse, 2->relay2 pulse, 3->relay3 toggle"));
-  Serial.println(F("Serial debug command: i -> print last IR code"));
+  Serial.print(F("  Positive trigger input (active HIGH, holds Relay 2): GPIO"));
+  Serial.println(POSITIVE_TRIGGER_PIN);
+  Serial.print(F("  Negative trigger input (active LOW, holds Relay 3): GPIO"));
+  Serial.println(NEGATIVE_TRIGGER_PIN);
+  Serial.println(F("Output pins:"));
+  Serial.print(F("  Relay 1 (IR 0x00 pulse): GPIO"));
+  Serial.println(RELAY1_PIN);
+  Serial.print(F("  Relay 2 (GPIO12 hold while active): GPIO"));
+  Serial.println(RELAY2_PIN);
+  Serial.print(F("  Relay 3 (GPIO13 hold while active): GPIO"));
+  Serial.println(RELAY3_PIN);
+  Serial.println(F("Relay mode: active LOW"));
+  Serial.print(F("Pulse duration (ms): "));
+  Serial.println(PULSE_MS);
+  Serial.println(F("Default timeout: none"));
+  Serial.println(F("IR programming: 0x00 triggers Relay 1 once."));
   Serial.println(F("Ready."));
 }
 
@@ -94,14 +110,13 @@ void printHealthStatus() {
   Serial.print(wifiStatusString());
   Serial.print(F(" | MQTT="));
   Serial.print(mqttClient.connected() ? F("CONNECTED") : F("DISCONNECTED"));
-  Serial.print(F(" | relay1=");
+  Serial.print(F(" | relay1="));
   Serial.print(relayState[0] ? F("ON") : F("OFF"));
   Serial.print(F(" | relay2="));
   Serial.print(relayState[1] ? F("ON") : F("OFF"));
   Serial.print(F(" | relay3="));
   Serial.print(relayState[2] ? F("ON") : F("OFF"));
-  Serial.print(F(" | lockout="));
-  Serial.println(relay2LockoutUntil != 0 ? F("ACTIVE") : F("READY"));
+  Serial.println();
 }
 
 void printLastIrDebug() {
@@ -129,19 +144,10 @@ void handleIrInput(unsigned long now) {
   Serial.println(command, HEX);
 
   if (!isRepeat && (now - lastIrTriggerAt >= IR_DEBOUNCE_MS)) {
-    if (command == IR_COMMAND_RELAY1) {
+    if (command == IR_CODE_0) {
       pulseRelay(0, RELAY1_PIN, PULSE_MS);
-    } else if (command == IR_COMMAND_RELAY2) {
-      if (relay2LockoutUntil == 0) {
-        pulseRelay(1, RELAY2_PIN, PULSE_MS);
-        relay2LockoutUntil = millis() + LOCKOUT_MS;
-      } else {
-        Serial.println(F("IR relay2 command ignored during lockout"));
-      }
-    } else if (command == IR_COMMAND_RELAY3) {
-      toggleRelay(2, RELAY3_PIN);
+      Serial.println(F("IR 0x00 received: Relay 1 pulse"));
     }
-
     lastIrTriggerAt = now;
   }
 
@@ -151,8 +157,12 @@ void handleIrInput(unsigned long now) {
 void readSerialDebugCommands() {
   while (Serial.available() > 0) {
     char command = static_cast<char>(Serial.read());
-    if (command == 'i') {
-      printLastIrDebug();
+    switch (command) {
+      case '1': pulseRelay(0, RELAY1_PIN, PULSE_MS); break;
+      case '2': holdRelayActive(1, RELAY2_PIN); break;
+      case '3': holdRelayActive(2, RELAY3_PIN); break;
+      case 'i': printLastIrDebug(); break;
+      default: break;
     }
   }
 }
@@ -168,31 +178,21 @@ void handleMessage(char *topic, byte *payload, unsigned int length) {
   if (strcmp(message, "relay1:pulse") == 0) {
     pulseRelay(0, RELAY1_PIN, PULSE_MS);
   } else if (strcmp(message, "relay2:pulse") == 0) {
-    if (relay2LockoutUntil == 0) {
-      pulseRelay(1, RELAY2_PIN, PULSE_MS);
-      relay2LockoutUntil = millis() + LOCKOUT_MS;
-    }
+    holdRelayActive(1, RELAY2_PIN);
   } else if (strcmp(message, "relay3:toggle") == 0) {
     toggleRelay(2, RELAY3_PIN);
   }
 }
 
 void firePositiveInputTrigger(unsigned long now) {
-  Serial.println(F("Input trigger: POSITIVE"));
-  pulseRelay(0, RELAY1_PIN, PULSE_MS);
+  Serial.println(F("Input trigger: POSITIVE -> Relay 2 active while D6 stays HIGH"));
+  holdRelayActive(1, RELAY2_PIN);
   lastPositiveTriggerAt = now;
 }
 
 void fireNegativeInputTrigger(unsigned long now) {
-  Serial.println(F("Input trigger: NEGATIVE"));
-  Serial.println(F("Reprinting header due to negative trigger."));
-  printHeader();
-  if (relay2LockoutUntil == 0) {
-    pulseRelay(1, RELAY2_PIN, PULSE_MS);
-    relay2LockoutUntil = millis() + LOCKOUT_MS;
-  } else {
-    Serial.println(F("Negative input ignored during lockout"));
-  }
+  Serial.println(F("Input trigger: NEGATIVE -> Relay 3 active while D7 stays LOW"));
+  holdRelayActive(2, RELAY3_PIN);
   lastNegativeTriggerAt = now;
 }
 
@@ -204,8 +204,16 @@ void handleInputTriggers(unsigned long now) {
     firePositiveInputTrigger(now);
   }
 
+  if (!positiveActive && lastPositiveActive) {
+    releaseRelay(1, RELAY2_PIN);
+  }
+
   if (negativeActive && !lastNegativeActive && (now - lastNegativeTriggerAt >= INPUT_DEBOUNCE_MS)) {
     fireNegativeInputTrigger(now);
+  }
+
+  if (!negativeActive && lastNegativeActive) {
+    releaseRelay(2, RELAY3_PIN);
   }
 
   lastPositiveActive = positiveActive;
@@ -215,9 +223,14 @@ void handleInputTriggers(unsigned long now) {
 void connectWiFi() {
   WiFi.mode(WIFI_STA);
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  Serial.print(F("Connecting to WiFi"));
   while (WiFi.status() != WL_CONNECTED) {
+    Serial.print('.');
     delay(500);
   }
+  Serial.println();
+  Serial.print(F("WiFi connected. IP: "));
+  Serial.println(WiFi.localIP());
 }
 
 void connectMqtt() {
@@ -230,7 +243,10 @@ void connectMqtt() {
       char statusTopic[96];
       snprintf(statusTopic, sizeof(statusTopic), "haunt/%s/status", DEVICE_ID);
       mqttClient.publish(statusTopic, "online", true);
+      Serial.println(F("MQTT connected."));
     } else {
+      Serial.print(F("MQTT connect failed. State: "));
+      Serial.println(mqttClient.state());
       delay(2000);
     }
   }
@@ -254,10 +270,11 @@ void setup() {
 
   IrReceiver.begin(IR_RECEIVER_PIN, DISABLE_LED_FEEDBACK);
 
-  connectWiFi();
   mqttClient.setServer(MQTT_HOST, MQTT_PORT);
   mqttClient.setCallback(handleMessage);
+
   printHeader();
+  connectWiFi();
 }
 
 void loop() {
@@ -277,6 +294,15 @@ void loop() {
     Serial.println(F("Heartbeat: node running"));
     printHealthStatus();
   }
+
+  for (uint8_t i = 0; i < 3; ++i) {
+    if (relayOffAt[i] != 0 && timeReached(now, relayOffAt[i])) {
+      setRelay((i == 0) ? RELAY1_PIN : (i == 1) ? RELAY2_PIN : RELAY3_PIN, false);
+      relayState[i] = false;
+      relayOffAt[i] = 0;
+    }
+  }
+}
 
   if (timeReached(now, relay2LockoutUntil)) {
     relay2LockoutUntil = 0;

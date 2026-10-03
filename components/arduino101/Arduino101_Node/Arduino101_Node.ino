@@ -12,7 +12,6 @@ constexpr uint8_t RELAY3_PIN = 6;
 
 constexpr bool RELAY_ACTIVE_LOW = true;
 constexpr unsigned long PULSE_MS = 250;
-constexpr unsigned long LOCKOUT_MS = 15000;
 constexpr unsigned long INPUT_DEBOUNCE_MS = 50;
 constexpr uint32_t CONFIG_MAGIC = 0x41433130UL;
 constexpr int EEPROM_SLOT_ADDR = 0;
@@ -28,8 +27,7 @@ Config config;
 
 unsigned long relay1OffAt = 0;
 unsigned long relay2OffAt = 0;
-unsigned long relay2LockoutUntil = 0;
-bool relay3State = false;
+unsigned long relay3OffAt = 0;
 unsigned long lastHeartbeatAt = 0;
 unsigned long lastPositiveTriggerAt = 0;
 unsigned long lastNegativeTriggerAt = 0;
@@ -49,9 +47,14 @@ void pulseRelay(uint8_t pin, unsigned long &offAt, unsigned long durationMs) {
   offAt = millis() + durationMs;
 }
 
-void toggleRelay(uint8_t pin, bool &state) {
-  state = !state;
-  setRelay(pin, state);
+void holdRelayActive(uint8_t pin, unsigned long &offAt) {
+  setRelay(pin, true);
+  offAt = 0;
+}
+
+void releaseRelay(uint8_t pin, unsigned long &offAt) {
+  setRelay(pin, false);
+  offAt = 0;
 }
 
 void loadConfig() {
@@ -81,26 +84,25 @@ void printCode(const __FlashStringHelper *label, uint32_t code) {
 
 void printHeader() {
   Serial.println(F("=== Arduino 101 Haunted Node ==="));
-  Serial.println(F("Purpose: RF receiver drives three relay behaviors."));
-  Serial.println(F("Input pin:"));
+  Serial.println(F("Purpose: RF programming input plus level-based local trigger outputs."));
+  Serial.println(F("Input pins:"));
   Serial.print(F("  RF receiver data: D"));
   Serial.println(RF_RECEIVER_PIN);
-  Serial.print(F("  Positive trigger input (active HIGH): D"));
+  Serial.print(F("  Positive trigger input (active HIGH, holds Relay 2): D"));
   Serial.println(POSITIVE_TRIGGER_PIN);
-  Serial.print(F("  Negative trigger input (active LOW, pull-up enabled): D"));
+  Serial.print(F("  Negative trigger input (active LOW, holds Relay 3): D"));
   Serial.println(NEGATIVE_TRIGGER_PIN);
   Serial.println(F("Output pins:"));
-  Serial.print(F("  Relay 1 (momentary pulse): D"));
+  Serial.print(F("  Relay 1 (RF 0x0 pulse): D"));
   Serial.println(RELAY1_PIN);
-  Serial.print(F("  Relay 2 (momentary pulse + 15s lockout): D"));
+  Serial.print(F("  Relay 2 (D7 hold while active): D"));
   Serial.println(RELAY2_PIN);
-  Serial.print(F("  Relay 3 (toggle): D"));
+  Serial.print(F("  Relay 3 (D8 hold while active): D"));
   Serial.println(RELAY3_PIN);
   Serial.println(F("Relay mode: active LOW"));
   Serial.print(F("Pulse duration (ms): "));
   Serial.println(PULSE_MS);
-  Serial.print(F("Lockout duration (ms): "));
-  Serial.println(LOCKOUT_MS);
+  Serial.println(F("Default RF timeout: none"));
   Serial.println(F("Configured RF codes:"));
   printCode(F("  pulseCode = "), config.pulseCode);
   printCode(F("  lockoutCode = "), config.lockoutCode);
@@ -109,21 +111,16 @@ void printHeader() {
 }
 
 void firePositiveInputTrigger(unsigned long now) {
-  Serial.println(F("Input trigger: POSITIVE"));
-  pulseRelay(RELAY1_PIN, relay1OffAt, PULSE_MS);
+  Serial.println(F("Input trigger: POSITIVE -> Relay 2 active while D7 stays HIGH"));
+  holdRelayActive(RELAY2_PIN, relay2OffAt);
   lastPositiveTriggerAt = now;
 }
 
 void fireNegativeInputTrigger(unsigned long now) {
-  Serial.println(F("Input trigger: NEGATIVE"));
+  Serial.println(F("Input trigger: NEGATIVE -> Relay 3 active while D8 stays LOW"));
   Serial.println(F("Reprinting header due to negative trigger."));
   printHeader();
-  if (relay2LockoutUntil == 0) {
-    pulseRelay(RELAY2_PIN, relay2OffAt, PULSE_MS);
-    relay2LockoutUntil = millis() + LOCKOUT_MS;
-  } else {
-    Serial.println(F("Negative input ignored during lockout"));
-  }
+  holdRelayActive(RELAY3_PIN, relay3OffAt);
   lastNegativeTriggerAt = now;
 }
 
@@ -135,8 +132,16 @@ void handleInputTriggers(unsigned long now) {
     firePositiveInputTrigger(now);
   }
 
+  if (!positiveActive && lastPositiveActive) {
+    releaseRelay(RELAY2_PIN, relay2OffAt);
+  }
+
   if (negativeActive && !lastNegativeActive && (now - lastNegativeTriggerAt >= INPUT_DEBOUNCE_MS)) {
     fireNegativeInputTrigger(now);
+  }
+
+  if (!negativeActive && lastNegativeActive) {
+    releaseRelay(RELAY3_PIN, relay3OffAt);
   }
 
   lastPositiveActive = positiveActive;
@@ -185,8 +190,9 @@ void loop() {
     relay2OffAt = 0;
   }
 
-  if (timeReached(now, relay2LockoutUntil)) {
-    relay2LockoutUntil = 0;
+  if (timeReached(now, relay3OffAt)) {
+    setRelay(RELAY3_PIN, false);
+    relay3OffAt = 0;
   }
 
   if (rfReceiver.available()) {
@@ -194,17 +200,20 @@ void loop() {
     Serial.print(F("RF received: "));
     Serial.println(received);
 
-    if (codeMatches(config.pulseCode, received)) {
+    if (received == 0x0) {
       pulseRelay(RELAY1_PIN, relay1OffAt, PULSE_MS);
     }
 
-    if (codeMatches(config.lockoutCode, received) && relay2LockoutUntil == 0) {
-      pulseRelay(RELAY2_PIN, relay2OffAt, PULSE_MS);
-      relay2LockoutUntil = millis() + LOCKOUT_MS;
+    if (codeMatches(config.pulseCode, received) && received != 0x0) {
+      pulseRelay(RELAY1_PIN, relay1OffAt, PULSE_MS);
+    }
+
+    if (codeMatches(config.lockoutCode, received)) {
+      // Timeout is intentionally disabled by default; keep the stored programming value available without automatic expiry.
     }
 
     if (codeMatches(config.toggleCode, received)) {
-      toggleRelay(RELAY3_PIN, relay3State);
+      // Toggle behavior is disabled in the new trigger model; RF programming only configures the relay 1 code.
     }
 
     rfReceiver.resetAvailable();

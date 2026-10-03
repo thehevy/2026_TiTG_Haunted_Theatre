@@ -14,38 +14,22 @@
 #include <IRremote.hpp>
 
 // GPIO pin assignments - safe non-strapping GPIOs on ESP32-WROOM-DA.
-constexpr uint8_t RELAY1_PIN           = 4;
-constexpr uint8_t RELAY2_PIN           = 5;
-constexpr uint8_t RELAY3_PIN           = 18;
+constexpr uint8_t IR_RECEIVER_PIN = 19;
 constexpr uint8_t POSITIVE_TRIGGER_PIN = 16;
 constexpr uint8_t NEGATIVE_TRIGGER_PIN = 17;
-constexpr uint8_t IR_RECEIVER_PIN      = 19;
-constexpr bool    RELAY_ACTIVE_LOW     = true;
+constexpr uint8_t RELAY1_PIN = 4;
+constexpr uint8_t RELAY2_PIN = 5;
+constexpr uint8_t RELAY3_PIN = 18;
+constexpr bool RELAY_ACTIVE_LOW = true;
 
-constexpr unsigned long PULSE_MS               = 250;
-constexpr unsigned long LOCKOUT_MS             = 15000;
-constexpr unsigned long INPUT_DEBOUNCE_MS      = 50;
-constexpr unsigned long IR_DEBOUNCE_MS         = 250;
-constexpr unsigned long IR_LOCKOUT_MODE_NONE_MS = 0;
-constexpr unsigned long IR_LOCKOUT_MODE_5S_MS  = 5000;
-constexpr unsigned long IR_LOCKOUT_MODE_15S_MS = 15000;
+constexpr unsigned long PULSE_MS = 250;
+constexpr unsigned long INPUT_DEBOUNCE_MS = 50;
+constexpr unsigned long IR_DEBOUNCE_MS = 250;
 constexpr unsigned long WIFI_CONNECT_TIMEOUT_MS = 20000;
-constexpr unsigned long WIFI_RETRY_MS          = 30000;
-constexpr unsigned long MQTT_RETRY_MS          = 5000;
-constexpr uint16_t CONFIG_PORTAL_PORT          = 80;
-
-// IR remote button codes (NEC protocol, same as UNO_Node).
-constexpr uint8_t IR_CODE_A1    = 0x0C;
-constexpr uint8_t IR_CODE_A2    = 0x18;
-constexpr uint8_t IR_CODE_A3    = 0x5E;
-constexpr uint8_t IR_CODE_A4    = 0x08;
-constexpr uint8_t IR_CODE_A5    = 0x1C;
-constexpr uint8_t IR_CODE_A6    = 0x5A;
-constexpr uint8_t IR_CODE_A7    = 0x42;
-constexpr uint8_t IR_CODE_M1    = 0x07;
-constexpr uint8_t IR_CODE_M2    = 0x15;
-constexpr uint8_t IR_CODE_M3    = 0x09;
-constexpr uint8_t IR_CODE_POWER = 0x45;
+constexpr unsigned long WIFI_RETRY_MS = 30000;
+constexpr unsigned long MQTT_RETRY_MS = 5000;
+constexpr uint16_t CONFIG_PORTAL_PORT = 80;
+constexpr uint8_t IR_CODE_0 = 0x00;
 
 // Stored/runtime network config.
 const char *DEFAULT_WIFI_SSID     = "TITG2026HT";
@@ -67,17 +51,13 @@ Preferences prefs;
 
 bool relayState[3] = {false, false, false};
 unsigned long relayOffAt[3] = {0, 0, 0};
-unsigned long relay2LockoutUntil = 0;
+unsigned long relay1OffAt = 0;
 unsigned long lastPositiveTriggerAt = 0;
 unsigned long lastNegativeTriggerAt = 0;
 bool lastPositiveActive = false;
 bool lastNegativeActive = false;
 unsigned long lastHeartbeatAt = 0;
 unsigned long lastIrTriggerAt = 0;
-unsigned long irActionLockoutMs = IR_LOCKOUT_MODE_15S_MS;
-unsigned long irActionLockoutUntil = 0;
-int lastRelay2LockoutCountdownSeconds = -1;
-int lastIrLockoutCountdownSeconds = -1;
 uint8_t lastIrCommand = 0;
 uint32_t lastIrRawData = 0;
 unsigned long lastMqttAttemptAt = 0;
@@ -137,20 +117,22 @@ void setRelay(uint8_t pin, bool on) {
   digitalWrite(pin, RELAY_ACTIVE_LOW ? (on ? LOW : HIGH) : (on ? HIGH : LOW));
 }
 
-void pulseRelay(uint8_t index, uint8_t pin, unsigned long durationMs) {
+void pulseRelay(uint8_t pin, unsigned long &offAt, unsigned long durationMs) {
   setRelay(pin, true);
-  relayOffAt[index] = millis() + durationMs;
+  offAt = millis() + durationMs;
+}
+
+void holdRelayActive(uint8_t pin) {
+  setRelay(pin, true);
+}
+
+void releaseRelay(uint8_t pin) {
+  setRelay(pin, false);
 }
 
 void toggleRelay(uint8_t index, uint8_t pin) {
   relayState[index] = !relayState[index];
   setRelay(pin, relayState[index]);
-}
-
-void pulseAllRelays() {
-  pulseRelay(0, RELAY1_PIN, PULSE_MS);
-  pulseRelay(1, RELAY2_PIN, PULSE_MS);
-  pulseRelay(2, RELAY3_PIN, PULSE_MS);
 }
 
 bool timeReached(unsigned long now, unsigned long target) {
@@ -161,7 +143,7 @@ bool timeReached(unsigned long now, unsigned long target) {
 
 void printHeader() {
   Serial.println(F("=== Acebott ESP32-Max Node ==="));
-  Serial.println(F("Purpose: WiFi/MQTT, IR, and local trigger relay controller"));
+  Serial.println(F("Purpose: WiFi/MQTT, IR, and local trigger relay controller."));
   Serial.print(F("Device ID: "));
   Serial.println(deviceId);
   Serial.print(F("WiFi SSID: "));
@@ -170,65 +152,26 @@ void printHeader() {
   Serial.print(mqttHost);
   Serial.print(F(":"));
   Serial.println(mqttPort);
-  Serial.print(F("Relay 1 pulse: GPIO"));
-  Serial.println(RELAY1_PIN);
-  Serial.print(F("Relay 2 pulse+lockout: GPIO"));
-  Serial.println(RELAY2_PIN);
-  Serial.print(F("Relay 3 toggle: GPIO"));
-  Serial.println(RELAY3_PIN);
-  Serial.print(F("Positive trigger (active HIGH): GPIO"));
-  Serial.println(POSITIVE_TRIGGER_PIN);
-  Serial.print(F("Negative trigger (active LOW): GPIO"));
-  Serial.println(NEGATIVE_TRIGGER_PIN);
-  Serial.print(F("IR receiver: GPIO"));
+  Serial.println(F("Input pins:"));
+  Serial.print(F("  IR receiver data: GPIO"));
   Serial.println(IR_RECEIVER_PIN);
-  Serial.println(F("IR map: A1/A2/A3 pulse, A4/A5/A6 toggle, A7 pulse all"));
-  Serial.println(F("IR map: M1/M2/M3 lockout none/5s/15s, POWER reprint header"));
-  Serial.println(F("Serial debug: i -> print last IR code"));
-  Serial.println(F("Serial commands: 1,2,3 pulse | a,b,c toggle"));
+  Serial.print(F("  Positive trigger input (active HIGH, holds Relay 2): GPIO"));
+  Serial.println(POSITIVE_TRIGGER_PIN);
+  Serial.print(F("  Negative trigger input (active LOW, holds Relay 3): GPIO"));
+  Serial.println(NEGATIVE_TRIGGER_PIN);
+  Serial.println(F("Output pins:"));
+  Serial.print(F("  Relay 1 (IR 0x00 pulse): GPIO"));
+  Serial.println(RELAY1_PIN);
+  Serial.print(F("  Relay 2 (GPIO16 hold while active): GPIO"));
+  Serial.println(RELAY2_PIN);
+  Serial.print(F("  Relay 3 (GPIO17 hold while active): GPIO"));
+  Serial.println(RELAY3_PIN);
+  Serial.println(F("Relay mode: active LOW"));
+  Serial.print(F("Pulse duration (ms): "));
+  Serial.println(PULSE_MS);
+  Serial.println(F("Default timeout: none"));
+  Serial.println(F("IR programming: 0x00 triggers Relay 1 once."));
   Serial.println(F("Ready."));
-}
-
-// ---- Lockout helpers -------------------------------------------------------
-
-bool isIrLockoutActive(unsigned long now) {
-  return irActionLockoutUntil != 0 && static_cast<long>(now - irActionLockoutUntil) < 0;
-}
-
-void startIrLockoutIfEnabled(unsigned long now) {
-  irActionLockoutUntil = (irActionLockoutMs == 0) ? 0 : now + irActionLockoutMs;
-}
-
-void setIrLockoutMode(unsigned long durationMs) {
-  irActionLockoutMs = durationMs;
-  irActionLockoutUntil = 0;
-  Serial.print(F("IR lockout mode set to: "));
-  if (durationMs == 0) {
-    Serial.println(F("none"));
-  } else {
-    Serial.print(durationMs / 1000);
-    Serial.println(F(" seconds"));
-  }
-}
-
-void printLockoutCountdown(const __FlashStringHelper *label, unsigned long now,
-                           unsigned long lockoutUntil, int &lastPrintedSeconds) {
-  if (lockoutUntil == 0 || static_cast<long>(now - lockoutUntil) >= 0) {
-    if (lastPrintedSeconds != -1) {
-      Serial.print(label);
-      Serial.println(F(" lockout cleared"));
-      lastPrintedSeconds = -1;
-    }
-    return;
-  }
-  int remaining = static_cast<int>((lockoutUntil - now + 999) / 1000);
-  if (remaining != lastPrintedSeconds) {
-    Serial.print(label);
-    Serial.print(F(" lockout remaining: "));
-    Serial.print(remaining);
-    Serial.println(F("s"));
-    lastPrintedSeconds = remaining;
-  }
 }
 
 // ---- IR decode -------------------------------------------------------------
@@ -253,39 +196,11 @@ void handleIrInput(unsigned long now) {
   Serial.println(command, HEX);
 
   if (!isRepeat && (now - lastIrTriggerAt >= IR_DEBOUNCE_MS)) {
-    if (command == IR_CODE_M1) {
-      setIrLockoutMode(IR_LOCKOUT_MODE_NONE_MS);
-    } else if (command == IR_CODE_M2) {
-      setIrLockoutMode(IR_LOCKOUT_MODE_5S_MS);
-    } else if (command == IR_CODE_M3) {
-      setIrLockoutMode(IR_LOCKOUT_MODE_15S_MS);
-    } else if (command == IR_CODE_POWER) {
-      Serial.println(F("IR POWER received: reprinting header."));
-      printHeader();
-    } else if (command == IR_CODE_A4) {
-      toggleRelay(0, RELAY1_PIN);
-    } else if (command == IR_CODE_A5) {
-      toggleRelay(1, RELAY2_PIN);
-    } else if (command == IR_CODE_A6) {
-      toggleRelay(2, RELAY3_PIN);
-    } else if (command == IR_CODE_A1 || command == IR_CODE_A2 ||
-               command == IR_CODE_A3 || command == IR_CODE_A7) {
-      if (isIrLockoutActive(now)) {
-        Serial.println(F("IR pulse action ignored during lockout"));
-      } else if (command == IR_CODE_A1) {
-        pulseRelay(0, RELAY1_PIN, PULSE_MS);
-        startIrLockoutIfEnabled(now);
-      } else if (command == IR_CODE_A2) {
-        pulseRelay(1, RELAY2_PIN, PULSE_MS);
-        startIrLockoutIfEnabled(now);
-      } else if (command == IR_CODE_A3) {
-        pulseRelay(2, RELAY3_PIN, PULSE_MS);
-        startIrLockoutIfEnabled(now);
-      } else if (command == IR_CODE_A7) {
-        pulseAllRelays();
-        startIrLockoutIfEnabled(now);
-      }
+    if (command == IR_CODE_0) {
+      pulseRelay(RELAY1_PIN, relay1OffAt, PULSE_MS);
+      Serial.println(F("IR 0x00 received: Relay 1 pulse"));
     }
+
     lastIrTriggerAt = now;
   }
 
@@ -295,21 +210,14 @@ void handleIrInput(unsigned long now) {
 // ---- Local trigger inputs --------------------------------------------------
 
 void firePositiveInputTrigger(unsigned long now) {
-  Serial.println(F("Input trigger: POSITIVE"));
-  pulseRelay(0, RELAY1_PIN, PULSE_MS);
+  Serial.println(F("Input trigger: POSITIVE -> Relay 2 active while GPIO16 stays HIGH"));
+  holdRelayActive(RELAY2_PIN);
   lastPositiveTriggerAt = now;
 }
 
 void fireNegativeInputTrigger(unsigned long now) {
-  Serial.println(F("Input trigger: NEGATIVE"));
-  Serial.println(F("Reprinting header due to negative trigger."));
-  printHeader();
-  if (relay2LockoutUntil == 0) {
-    pulseRelay(1, RELAY2_PIN, PULSE_MS);
-    relay2LockoutUntil = millis() + LOCKOUT_MS;
-  } else {
-    Serial.println(F("Negative input ignored during lockout"));
-  }
+  Serial.println(F("Input trigger: NEGATIVE -> Relay 3 active while GPIO17 stays LOW"));
+  holdRelayActive(RELAY3_PIN);
   lastNegativeTriggerAt = now;
 }
 
@@ -320,8 +228,17 @@ void handleInputTriggers(unsigned long now) {
   if (positiveActive && !lastPositiveActive && (now - lastPositiveTriggerAt >= INPUT_DEBOUNCE_MS)) {
     firePositiveInputTrigger(now);
   }
+
+  if (!positiveActive && lastPositiveActive) {
+    releaseRelay(RELAY2_PIN);
+  }
+
   if (negativeActive && !lastNegativeActive && (now - lastNegativeTriggerAt >= INPUT_DEBOUNCE_MS)) {
     fireNegativeInputTrigger(now);
+  }
+
+  if (!negativeActive && lastNegativeActive) {
+    releaseRelay(RELAY3_PIN);
   }
 
   lastPositiveActive = positiveActive;
@@ -334,12 +251,9 @@ void readSerialDebugCommands() {
   while (Serial.available() > 0) {
     char command = static_cast<char>(Serial.read());
     switch (command) {
-      case '1': pulseRelay(0, RELAY1_PIN, PULSE_MS); break;
-      case '2': pulseRelay(1, RELAY2_PIN, PULSE_MS); break;
-      case '3': pulseRelay(2, RELAY3_PIN, PULSE_MS); break;
-      case 'a': toggleRelay(0, RELAY1_PIN); break;
-      case 'b': toggleRelay(1, RELAY2_PIN); break;
-      case 'c': toggleRelay(2, RELAY3_PIN); break;
+      case '1': pulseRelay(RELAY1_PIN, relay1OffAt, PULSE_MS); break;
+      case '2': holdRelayActive(RELAY2_PIN); break;
+      case '3': holdRelayActive(RELAY3_PIN); break;
       case 'i': printLastIrDebug(); break;
       default: break;
     }
@@ -362,12 +276,9 @@ void handleMqttMessage(char *topic, byte *payload, unsigned int length) {
   message[copyLen] = '\0';
 
   if (strcmp(message, "relay1:pulse") == 0) {
-    pulseRelay(0, RELAY1_PIN, PULSE_MS);
+    pulseRelay(RELAY1_PIN, relay1OffAt, PULSE_MS);
   } else if (strcmp(message, "relay2:pulse") == 0) {
-    if (relay2LockoutUntil == 0) {
-      pulseRelay(1, RELAY2_PIN, PULSE_MS);
-      relay2LockoutUntil = millis() + LOCKOUT_MS;
-    }
+    holdRelayActive(RELAY2_PIN);
   } else if (strcmp(message, "relay3:toggle") == 0) {
     toggleRelay(2, RELAY3_PIN);
   }
@@ -563,9 +474,6 @@ void loop() {
   handleInputTriggers(now);
   handleIrInput(now);
 
-  printLockoutCountdown(F("IR pulse action"), now, irActionLockoutUntil, lastIrLockoutCountdownSeconds);
-  printLockoutCountdown(F("Relay2 input"), now, relay2LockoutUntil, lastRelay2LockoutCountdownSeconds);
-
   if (now - lastHeartbeatAt >= 5000) {
     lastHeartbeatAt = now;
     if (configPortalActive) {
@@ -575,15 +483,8 @@ void loop() {
     }
   }
 
-  if (timeReached(now, relay2LockoutUntil)) relay2LockoutUntil = 0;
-  if (timeReached(now, irActionLockoutUntil)) irActionLockoutUntil = 0;
-
-  for (uint8_t i = 0; i < 3; ++i) {
-    if (relayOffAt[i] != 0 && static_cast<long>(now - relayOffAt[i]) >= 0) {
-      relayOffAt[i] = 0;
-      if (i == 0) setRelay(RELAY1_PIN, false);
-      if (i == 1) setRelay(RELAY2_PIN, false);
-      if (i == 2) setRelay(RELAY3_PIN, relayState[2]);
-    }
+  if (timeReached(now, relay1OffAt)) {
+    setRelay(RELAY1_PIN, false);
+    relay1OffAt = 0;
   }
 }

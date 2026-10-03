@@ -1,21 +1,12 @@
-// WeMos D1 R32 Node
-// ESP32-based board in Arduino UNO R3 form factor.
-// Serial and IR relay controller with held-trigger behavior.
-// Board: ESP32 Dev Module in Arduino IDE (IDE 2.x recommended).
-// NOTE: 3.3V logic. Use relay modules with optocoupler inputs that accept 3.3V.
-// NOTE: KY-022 IR receiver must be powered from 3.3V, not 5V.
-
 #include <Arduino.h>
 #include <IRremote.hpp>
 
-// GPIO assignments for WeMos D1 R32 (UNO form factor ESP32).
-// Silk label reference: D4=GPIO16, D3=GPIO17, D5=GPIO18, D6=GPIO19, D7=GPIO23, D9=GPIO27
-constexpr uint8_t IR_RECEIVER_PIN = 19;  // D6 label on board
-constexpr uint8_t POSITIVE_TRIGGER_PIN = 23; // D7 label on board - active HIGH
-constexpr uint8_t NEGATIVE_TRIGGER_PIN = 27; // D9 label on board - active LOW
-constexpr uint8_t RELAY1_PIN = 16;  // D4 label on board
-constexpr uint8_t RELAY2_PIN = 17;  // D3 label on board
-constexpr uint8_t RELAY3_PIN = 18;  // D5 label on board
+constexpr uint8_t IR_RECEIVER_PIN = 2;
+constexpr uint8_t POSITIVE_TRIGGER_PIN = 7;
+constexpr uint8_t NEGATIVE_TRIGGER_PIN = 8;
+constexpr uint8_t RELAY1_PIN = 4;
+constexpr uint8_t RELAY2_PIN = 5;
+constexpr uint8_t RELAY3_PIN = 6;
 constexpr bool RELAY_ACTIVE_LOW = true;
 
 constexpr unsigned long PULSE_MS = 250;
@@ -55,21 +46,21 @@ void releaseRelay(uint8_t pin) {
 }
 
 void printHeader() {
-  Serial.println(F("=== WeMos D1 R32 Node ==="));
+  Serial.println(F("=== Nano Node ==="));
   Serial.println(F("Purpose: IR programming input plus level-based local trigger outputs."));
   Serial.println(F("Input pins:"));
-  Serial.print(F("  IR receiver data: GPIO"));
+  Serial.print(F("  IR receiver data: D"));
   Serial.println(IR_RECEIVER_PIN);
-  Serial.print(F("  Positive trigger input (active HIGH, holds Relay 2): GPIO"));
+  Serial.print(F("  Positive trigger input (active HIGH, holds Relay 2): D"));
   Serial.println(POSITIVE_TRIGGER_PIN);
-  Serial.print(F("  Negative trigger input (active LOW, holds Relay 3): GPIO"));
+  Serial.print(F("  Negative trigger input (active LOW, holds Relay 3): D"));
   Serial.println(NEGATIVE_TRIGGER_PIN);
   Serial.println(F("Output pins:"));
-  Serial.print(F("  Relay 1 (IR 0x00 pulse): GPIO"));
+  Serial.print(F("  Relay 1 (IR 0x00 pulse): D"));
   Serial.println(RELAY1_PIN);
-  Serial.print(F("  Relay 2 (D7 hold while active): GPIO"));
+  Serial.print(F("  Relay 2 (D7 hold while active): D"));
   Serial.println(RELAY2_PIN);
-  Serial.print(F("  Relay 3 (D9 hold while active): GPIO"));
+  Serial.print(F("  Relay 3 (D8 hold while active): D"));
   Serial.println(RELAY3_PIN);
   Serial.println(F("Relay mode: active LOW"));
   Serial.print(F("Pulse duration (ms): "));
@@ -122,7 +113,8 @@ void firePositiveInputTrigger(unsigned long now) {
 }
 
 void fireNegativeInputTrigger(unsigned long now) {
-  Serial.println(F("Input trigger: NEGATIVE -> Relay 3 active while D9 stays LOW"));
+  Serial.println(F("Input trigger: NEGATIVE -> Relay 3 active while D8 stays LOW"));
+  printHeader();
   holdRelayActive(RELAY3_PIN);
   lastNegativeTriggerAt = now;
 }

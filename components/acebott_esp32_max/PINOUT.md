@@ -1,7 +1,7 @@
 # Acebott ESP32-Max v1.0 Pinout Guide
 
-**Created:** 2026-08-14
-**Last Updated:** 2026-08-14
+**Created:** 2026-08-14  
+**Last Updated:** 2026-10-03
 
 Target sketch:
 
@@ -12,28 +12,28 @@ Target sketch:
 The Acebott ESP32-Max v1.0 uses an ESP32-WROOM-DA module.
 It supports WiFi/Bluetooth and provides a standard ESP32 devkit GPIO header.
 
-- **3.3V logic** on all GPIO pins.
+- 3.3V logic on all GPIO pins.
 - Relay modules must accept 3.3V control input (most optocoupler relay boards do).
 - KY-022 IR receiver must be powered from 3.3V, not 5V.
 
 ## IDE Setup
 
-- Board: **ESP32 Dev Module** in Arduino IDE 2.x
+- Board: ESP32 Dev Module in Arduino IDE 2.x
 - Baud: `115200`
 - Required libraries (via Library Manager):
-  - **PubSubClient** by Nick O'Leary
-  - **IRremote** by Arduino-IRremote
+  - PubSubClient by Nick O'Leary
+  - IRremote by Arduino-IRremote
 
 ## Function Map
 
-| Function               | GPIO | Notes                                                                    |
-| ---------------------- | ---- | ------------------------------------------------------------------------ |
-| Relay 1 output         | 4    | Pulse. MQTT `relay1:pulse`. IR A1. Serial `1` or `a` toggle.             |
-| Relay 2 output         | 5    | Pulse+lockout. MQTT `relay2:pulse`. IR A2. Serial `2` or `b` toggle.     |
-| Relay 3 output         | 18   | Toggle. MQTT `relay3:toggle`. IR A3/A6. Serial `3` or `c` toggle.        |
-| Positive trigger input | 16   | Active HIGH input.                                                       |
-| Negative trigger input | 17   | Active LOW with pull-up. Also reprints header text to Serial.            |
-| IR receiver input      | 19   | KY-022 / TL1838 / VS1838B signal pin. Power from 3.3V only.              |
+| Function               | GPIO | Board Notes                                                                                 |
+| ---------------------- | ---- | ------------------------------------------------------------------------------------------ |
+| IR programming input    | 19   | Used for IR programming and option selection. Code `0x00` triggers Relay 1 only.            |
+| Positive trigger input | 16   | Active HIGH. Keeps Relay 2 active only while GPIO16 remains HIGH.                          |
+| Negative trigger input | 17   | Active LOW. Keeps Relay 3 active only while GPIO17 remains LOW. Use pull-up or internal pull-up. |
+| Relay 1 output         | 4    | Pulse output for the IR `0x00` trigger.                                                   |
+| Relay 2 output         | 5    | Held active while GPIO16 stays HIGH.                                                      |
+| Relay 3 output         | 18   | Held active while GPIO17 stays LOW.                                                       |
 
 ## Power and Ground
 
@@ -50,10 +50,10 @@ It supports WiFi/Bluetooth and provides a standard ESP32 devkit GPIO header.
 
 ## Board Power Input (Onboard Connector)
 
-| Input Path   | Connector Available         | Minimum Input | Maximum Input | Notes                                              |
-| ------------ | --------------------------- | ------------- | ------------- | -------------------------------------------------- |
-| USB power    | Yes (Micro-USB or USB-C)    | 4.75V         | 5.25V         | Preferred for programming and serial monitoring.   |
-| VIN pin      | Yes (header pin)            | 4.8V          | 5.5V          | Supply regulated 5V only.                          |
+| Input Path   | Connector Available      | Minimum Input | Maximum Input | Notes                                            |
+| ------------ | ------------------------ | ------------- | ------------- | ------------------------------------------------ |
+| USB power    | Yes (Micro-USB or USB-C) | 4.75V         | 5.25V         | Preferred for programming and serial monitoring. |
+| VIN pin      | Yes (header pin)         | 4.8V          | 5.5V          | Supply regulated 5V only.                        |
 
 ## WiFi and MQTT
 
@@ -81,31 +81,46 @@ It supports WiFi/Bluetooth and provides a standard ESP32 devkit GPIO header.
 
 ### IR Command Map
 
-| Remote Button | IR Code | Action                         |
-| ------------- | ------- | ------------------------------ |
-| A1            | `0x0C`  | Pulse GPIO4                    |
-| A2            | `0x18`  | Pulse GPIO5                    |
-| A3            | `0x5E`  | Pulse GPIO18                   |
-| A4            | `0x08`  | Toggle GPIO4                   |
-| A5            | `0x1C`  | Toggle GPIO5                   |
-| A6            | `0x5A`  | Toggle GPIO18                  |
-| A7            | `0x42`  | Pulse GPIO4, GPIO5, GPIO18     |
-| M1            | `0x07`  | Set lockout mode to none       |
-| M2            | `0x15`  | Set lockout mode to 5 seconds  |
-| M3            | `0x09`  | Set lockout mode to 15 seconds |
-| Power         | `0x45`  | Reprint header text to Serial  |
+| Remote Button | IR Code | Action       |
+| ------------- | ------- | ------------ |
+| `0`           | `0x00`  | Pulse GPIO4  |
 
-Lockout behavior:
+## Required Components and Resistor Guidance
 
-- Lockout applies to IR pulse actions (A1, A2, A3, A7).
-- Toggle actions (A4, A5, A6) always execute regardless of lockout.
+- 1x Acebott ESP32-Max v1.0
+- 1x 3-channel relay module (or three single-relay modules)
+- 1x KY-022 (TL1838/VS1838B) IR receiver module
+- 1x IR remote transmitter
+- 1x 10k pull-down resistor for GPIO16 so the positive trigger line stays LOW by default
+- 1x 10k pull-up resistor for GPIO17 if needed
+- Jumper wires and a stable common ground
+
+### Wiring notes for safe signal conditioning
+
+1. Connect the positive trigger source to GPIO16 through a proper signal path, and add a 10k resistor from GPIO16 to GND so the line stays LOW until a valid HIGH signal is present.
+2. Do not tie GPIO16 directly to 3.3V without a resistor path to ground; this can leave the line floating during reset and can stress the signal source.
+3. For the negative trigger, wire GPIO17 to a pull-up or use the internal pull-up, and switch the sensor to ground only when active.
+4. Keep the relay coil supply and the Arduino ground common, but do not power the relay coil from the same pin supply without appropriate flyback protection.
 
 ## Relay Logic
 
-- Sketch configured for **active LOW** relays.
-- If your relay board is active HIGH, set `RELAY_ACTIVE_LOW` to `false`.
+- The sketch is configured for active LOW relays.
+- If your relay board is active HIGH, set `RELAY_ACTIVE_LOW` to `false` in the sketch.
+- For the current trigger model, GPIO16 and GPIO17 behave as held-state triggers rather than momentary pulses.
+
+## Validation
+
+1. Open the Serial Monitor at `115200`.
+2. Press reset and confirm the startup banner.
+3. Drive GPIO16 HIGH and verify the sketch reports `POSITIVE -> Relay 2 active while GPIO16 stays HIGH`.
+4. Release GPIO16 and verify Relay 2 turns off.
+5. Pull GPIO17 LOW and verify the sketch reports `NEGATIVE -> Relay 3 active while GPIO17 stays LOW`.
+6. Release GPIO17 and verify Relay 3 turns off.
+7. Transmit IR code `0x00` and verify Relay 1 pulses once.
+8. Confirm the startup banner shows `Default timeout: none`.
 
 ## Serial Control
 
 - Baud: `115200`
-- Commands: `1`/`2`/`3` pulse, `a`/`b`/`c` toggle, `i` print last IR code.
+- Commands: `1` pulses Relay 1, `2` holds Relay 2, and `3` holds Relay 3 for test use.
+- `i` prints the last IR command and raw code.
