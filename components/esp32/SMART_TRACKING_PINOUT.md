@@ -33,6 +33,8 @@ This variant tracks a target with two VL53L1X time-of-flight sensors, rotates a 
 
 ## System Pinout Map
 
+> Board-specific note: this pin map is for the standard ESP32 Dev Module. The ESP32-S3-WROOM-1 variant uses GPIO21 for SDA and GPIO20 for SCL instead of GPIO22. The S3-specific pinout is documented separately in `components/esp32/ESP32S3_SMART_TRACKING_PINOUT.md`.
+
 | Component | Component Pin | ESP32 / Connection | Notes |
 | --------- | ------------- | ------------------ | ----- |
 | Left ToF sensor | VIN | 5V rail | Powers the sensor logic board |

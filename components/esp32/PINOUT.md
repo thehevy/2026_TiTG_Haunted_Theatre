@@ -17,6 +17,8 @@ Target sketch:
 
 ## Function Map
 
+> Board-specific note: classic ESP32 dev boards commonly use GPIO22 for I2C SCL. ESP32-S3-WROOM-1 boards do not use GPIO22 for the ToF I2C clock; they use GPIO20 instead. Keep the board pin map matched to the actual module you are wiring.
+
 | Function               | ESP32 Pin | Notes                                                                 |
 | ---------------------- | --------- | --------------------------------------------------------------------- |
 | IR receiver input      | GPIO19    | KY-022 signal line. IR `0x00` pulses Relay 1                          |
@@ -113,3 +115,19 @@ Target sketch:
 - `2` on Serial -> hold Relay 2 active
 - `3` on Serial -> hold Relay 3 active
 - `i` on Serial -> print the last IR command and raw value
+
+## Smart Tracking Skull Variants
+
+Dedicated smart-tracking skull sketches are available for the ToF + servo + audio + LED behavior described in the project notes.
+
+- Standard ESP32 version: `components/esp32/ESP32_SmartTracking_Node/ESP32_SmartTracking_Node.ino`
+- Standard ESP32 pinout: `components/esp32/SMART_TRACKING_PINOUT.md`
+- ESP32-S3 version: `components/esp32/ESP32S3_SmartTracking_Node/ESP32S3_SmartTracking_Node.ino`
+- ESP32-S3 pinout: `components/esp32/ESP32S3_SMART_TRACKING_PINOUT.md`
+
+These variants use:
+
+- Two VL53L1X ToF sensors
+- One servo for skull rotation
+- DFPlayer Mini for scare audio
+- Two LED outputs for glowing eye effects
