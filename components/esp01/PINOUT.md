@@ -57,9 +57,41 @@ Target sketch:
 - The sketch is configured for active HIGH relay drive on GPIO0.
 - If your relay board is active LOW instead, set `RELAY_ACTIVE_LOW` to `true` in the sketch.
 
+## Recommended Relay Driver Wiring
+
+Use an NPN transistor or optocoupler between GPIO0 and the relay module so GPIO0 is not directly forced low during boot.
+
+```text
+                 +3.3V
+                   |
+                  10k
+                   |
+ESP-01 GPIO0 -----+----|\  Base of NPN transistor
+                   |
+                  1k
+                   |
+                   +---------------------> Base
+                                         |
+                                    NPN transistor
+                                 Emitter  ---> GND
+                                         |
+                                  Collector ---> Relay module IN
+                                         |
+                   +5V ---------------------> Relay module VCC
+                   |
+ESP-01 GND -----------------------------> Relay module GND
+```
+
+- GPIO0 should have a 10k pull-up to 3.3V so it defaults high at reset.
+- The transistor isolates the relay coil current from the ESP-01 pin.
+- Keep the relay module power ground tied to the ESP-01 ground.
+
 ## Important ESP-01 Considerations
 
-- GPIO0 is a boot strapping pin. Keep the relay control path from forcing GPIO0 low at reset unless you intentionally want that behavior.
+- GPIO0 is a boot-strapping pin. Keep it from being forced low at reset; otherwise the ESP-01 can enter flash/boot mode unexpectedly.
+- This relay is active HIGH, so the intended behavior is a GPIO0 HIGH pulse during the trigger event, not a low state during startup. Keep GPIO0 pulled high at reset with a 10k pull-up.
+- The current sketch is already configured for active HIGH logic; no firmware change is required for relay polarity. The important hardware requirement is reset-safe GPIO0 wiring, not changing the sketch logic.
+- If the relay input is not high-impedance or needs isolation, use a transistor or optocoupler between GPIO0 and the relay input so the relay does not disturb boot timing or current draw.
 - GPIO1 and GPIO3 are used for serial upload and should not be repurposed for the main trigger input during development.
 - When using a bare ESP-01 module, a 3.3V serial adapter is required for programming.
 
