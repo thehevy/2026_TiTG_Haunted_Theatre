@@ -64,6 +64,8 @@ Recommended local setup:
   - Arduino 101 setup, firmware update, and troubleshooting
 - `CENTRAL_CONTROLLER_PLAN.md`
   - Full architecture and rollout plan
+- `SESSION_NOTES.md`
+  - Current status, next steps, and resume-on-a-new-machine setup
 
 ## Quick Start
 

@@ -14,6 +14,11 @@ This workspace manages a mixed haunted-theatre control stack:
 
 Primary board connection frequently appears on COM5 for Arduino 101 testing.
 
+## Session Continuity
+
+- Read `SESSION_NOTES.md` at the start of a session for current status, next steps, and new-machine setup
+- At the end of a session, update its Current Status, Next Steps, and Session Log sections
+
 ## Goals
 
 - Keep Arduino 101 setup compatible with Arduino IDE 1.8.19 first
