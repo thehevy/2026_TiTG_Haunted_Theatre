@@ -105,6 +105,29 @@ Run:
 
 Then unplug/replug the board.
 
+### Windows 11: Intel drivers rejected, use Zadig instead
+
+On Windows 11 (confirmed on Windows 11 Enterprise build 26200), `dpinst` fails with exit code `0x80030000`. The Intel driver catalogs are unsigned, and Windows enforces driver signing.
+The cause appears in `C:\Windows\INF\setupapi.dev.log` as `Error 0x800B0100: No signature was present`.
+
+Symptoms:
+
+- Normal mode works. The board shows as **USB Serial Device (COMx)** with VID `8087` PID `0AB6`, using the built-in Windows driver. This is expected; no fix needed for it.
+- Uploads hang at `Waiting for device...` and end with `ERROR: Timed out waiting for Arduino 101`. Pressing MASTER RESET does not help.
+  The board's flashing (DFU) mode device, **ARDUINO 101** (VID `8087` PID `0ABA`), has no driver.
+
+Fix (one time per PC, needs admin):
+
+1. Download Zadig from the official [libwdi releases](https://github.com/pbatard/libwdi/releases/latest) (for example `zadig-2.9.exe`).
+2. Run Zadig and accept the UAC prompt. The board can be unplugged.
+3. Choose **Device > Create New Device**, name it `Arduino 101 DFU`, and set the USB ID to `8087` / `0ABA` (leave MI blank).
+4. Set the target driver to **WinUSB** and click **Install Driver**.
+5. Plug the board in. It still shows as **USB Serial Device** in normal mode. **ARDUINO 101** appears under *Universal Serial Bus devices* only for a few seconds during uploads.
+
+Zadig adds a self-signed certificate for the driver it generates. Check corporate policy before using it on managed machines.
+
+If an upload reports `Serial port busy` or `Access to the port is denied`, another program has the port open. Close any serial monitors, then unplug/replug the board.
+
 ## Step 5: Select Board and Port
 
 1. Tools > Board > Arduino/Genuino 101

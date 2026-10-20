@@ -25,40 +25,31 @@ As of 2026-10-20:
   `tools/arduino/sketches.json`, and `.vscode/tasks.json`.
 - All 17 sketches compile with arduino-cli (see [baseline](#compile-verification-baseline)).
 - `ESP8266_Node.ino` build break is fixed (removed an orphaned block after `loop()`).
-- **No upload has been tested yet.** No Arduino board was connected during setup.
+- **First Arduino 101 upload succeeded** (2026-10-20): `Arduino101_SimpleIRNegativeTrigger60s` on **COM6** via arduino-cli.
+  The uploader also flashed the board's BLE firmware, and serial heartbeat output is confirmed. Other board families are not yet upload-tested.
+- The Arduino 101 DFU driver (WinUSB via Zadig) is installed on the setup machine. The Intel `dpinst` drivers do not install on
+  Windows 11 (unsigned catalogs). See `SETUP_GUIDE.md` > Step 4 > *Windows 11: Intel drivers rejected, use Zadig instead*.
 - VS Code C/C++ IntelliSense is configured via `.build/compile_commands.json`. That file is machine-specific; generate it with
   `.\tools\arduino\arduino.ps1 intellisense` (already generated on the setup machine).
-- On the setup machine, COM3 is Intel AMT SOL and COM4/COM5 are Bluetooth serial links. The
-  Arduino 101 is **not** currently on COM5. Confirm the port after you plug it in.
+- On the setup machine, COM3 is Intel AMT SOL, COM4/COM5 are Bluetooth serial links, and the Arduino 101 enumerates as
+  **COM6**. Always confirm with `ports` after plugging in.
 
 ## Next Steps
 
-1. Plug in the Arduino 101 and run:
+1. Wire and bench-test the 60 s IR negative trigger on the Arduino 101 (COM6): confirm D4 goes LOW for 60 s on an IR signal
+   and check the D5/D6 status LEDs. Pinout: `components/arduino101/Arduino101_SimpleIRNegativeTrigger60s/PINOUT.md`.
+2. Upload other sketches the same way as needed:
 
    ```powershell
    .\tools\arduino\arduino.ps1 ports
-   ```
-
-   Note the COM port that shows VID `8087` / PID `0AB6`.
-2. If Device Manager shows a generic **USB Serial Device**, run the Curie driver installer as administrator, then unplug/replug the board:
-
-   ```powershell
-   & "$env:LOCALAPPDATA\Arduino15\packages\Intel\hardware\arc32\2.0.4\drivers\dpinst-amd64.exe"
-   ```
-
-3. If the firmware is out of date, open Arduino IDE 1.8.19 and use Tools > Firmware Updater.
-   Board = Arduino/Genuino 101 and Port = the port from step 1. Press MASTER RESET right before clicking Update.
-4. Do a first upload (replace `COMx`):
-
-   ```powershell
-   .\tools\arduino\arduino.ps1 upload Arduino101_Node -Port COMx
+   .\tools\arduino\arduino.ps1 upload <SketchName> -Port COMx
    .\tools\arduino\arduino.ps1 monitor -Port COMx
    ```
 
-   If the upload stalls waiting for the device, press MASTER RESET as soon as the upload starts.
-   Close the serial monitor before uploading again.
-5. Repeat a first upload for one board of each other family (UNO/Nano, ESP32, ESP8266) and record results in the
+3. Do a first upload for one board of each other family (UNO/Nano, ESP32, ESP8266) and record results in the
    [Session Log](#session-log).
+4. On any **other** Windows 11 PC used for Arduino 101 uploads, install the DFU driver with Zadig first
+   (`SETUP_GUIDE.md` > Step 4 > *Windows 11: Intel drivers rejected, use Zadig instead*).
 
 ## Resume on This Machine
 
@@ -205,7 +196,10 @@ Expected warning: on Arduino 101 sketches, `rc-switch` says it "may be incompati
 
 ## Known Gotchas
 
-- **COM5 is not guaranteed to be the Arduino 101.** On the setup machine it was a Bluetooth serial link. Always run `ports` first.
+- **COM5 is not guaranteed to be the Arduino 101.** On the setup machine it was a Bluetooth serial link, and the board was COM6. Always run `ports` first.
+- **Arduino 101 on Windows 11:** Intel `dpinst` drivers fail (`0x80030000`, unsigned catalogs). Install WinUSB for VID `8087` PID `0ABA`
+  with Zadig (Device > Create New Device). Without it, uploads time out at `Waiting for device...` even with MASTER RESET.
+- **`Serial port busy` / `Access denied` on upload:** another program holds the COM port. Close serial monitors and unplug/replug the board.
 - **Port auto-detect:** `upload` without `-Port` only works when exactly one connected board matches the sketch's board type.
   Boards with CH340/CP210x USB bridges (most ESP boards) are not identified. Pass `-Port` for them.
 - **PowerShell 5.1 stderr:** ESP cores write size reports to stderr. `arduino.ps1` merges stderr so these aren't treated as failures. Keep that behavior if you edit `Invoke-Cli`.
@@ -243,3 +237,14 @@ Expected warning: on Arduino 101 sketches, `rc-switch` says it "may be incompati
   `.build/compile_commands.json`.
 - Committed `.vscode/c_cpp_properties.json` and `.vscode/settings.json`, and added the **Arduino: Refresh IntelliSense** task.
   `.build/` is gitignored.
+
+### 2026-10-20: First Arduino 101 upload (COM6)
+
+- Target: `Arduino101_SimpleIRNegativeTrigger60s` to the Arduino 101 on COM6 (VID `8087` PID `0AB6`).
+- First attempt failed. COM6 was busy (fixed by unplug/replug), and the DFU-mode device (PID `0ABA`) had no driver.
+- Intel `dpinst-amd64.exe` was rejected on Windows 11 Enterprise 26200 (unsigned catalogs, `0x800B0100`).
+- Installed WinUSB for `8087:0ABA` with Zadig 2.9 (official libwdi v1.5.1 release, Authenticode-signed by Akeo Consulting),
+  saved to `%LOCALAPPDATA%\Programs\zadig`.
+- Upload succeeded. The uploader also flashed the BLE firmware. Serial heartbeat confirmed:
+  `Heartbeat: IR input D3, negative trigger output D4`.
+- Documented the Zadig fix in `SETUP_GUIDE.md` Step 4.
