@@ -68,6 +68,7 @@ void loadConfig() {
   }
 }
 
+// rc-switch never reports code 0 (available() treats 0 as "nothing received"), so 0 is free to mean "any code".
 bool codeMatches(uint32_t configuredCode, uint32_t receivedCode) {
   return configuredCode == 0 || configuredCode == receivedCode;
 }
@@ -93,7 +94,7 @@ void printHeader() {
   Serial.print(F("  Negative trigger input (active LOW, holds Relay 3): D"));
   Serial.println(NEGATIVE_TRIGGER_PIN);
   Serial.println(F("Output pins:"));
-  Serial.print(F("  Relay 1 (RF 0x0 pulse): D"));
+  Serial.print(F("  Relay 1 (RF pulseCode pulse; any code while pulseCode is unset): D"));
   Serial.println(RELAY1_PIN);
   Serial.print(F("  Relay 2 (D7 hold while active): D"));
   Serial.println(RELAY2_PIN);
@@ -200,11 +201,7 @@ void loop() {
     Serial.print(F("RF received: "));
     Serial.println(received);
 
-    if (received == 0x0) {
-      pulseRelay(RELAY1_PIN, relay1OffAt, PULSE_MS);
-    }
-
-    if (codeMatches(config.pulseCode, received) && received != 0x0) {
+    if (codeMatches(config.pulseCode, received)) {
       pulseRelay(RELAY1_PIN, relay1OffAt, PULSE_MS);
     }
 

@@ -36,11 +36,13 @@ As of 2026-10-20:
 
 ## Next Steps
 
-1. Upload and bench-test `Arduino101_TimedTriggerRelay` (see its `PINOUT.md` > Validation):
+1. Upload `Arduino101_SimpleIRNegativeTriggerCode0x0` to COM6 and press each 433 MHz remote button. Record the printed codes and
+   confirm that `0x0` triggers the relay (see its `PINOUT.md` > Validation). If no button sends `0x0`, set `TRIGGER_CODE` to the code you want.
+2. Upload and bench-test `Arduino101_TimedTriggerRelay` (see its `PINOUT.md` > Validation):
    `.\tools\arduino\arduino.ps1 upload Arduino101_TimedTriggerRelay -Port COM6`.
-2. Wire and bench-test the 60 s IR negative trigger on the Arduino 101 (COM6): confirm D4 goes LOW for 60 s on an IR signal
+3. Wire and bench-test the 60 s IR negative trigger on the Arduino 101 (COM6): confirm D4 goes LOW for 60 s on an IR signal
    and check the D5/D6 status LEDs. Pinout: `components/arduino101/Arduino101_SimpleIRNegativeTrigger60s/PINOUT.md`.
-3. Upload other sketches the same way as needed:
+4. Upload other sketches the same way as needed:
 
    ```powershell
    .\tools\arduino\arduino.ps1 ports
@@ -48,9 +50,9 @@ As of 2026-10-20:
    .\tools\arduino\arduino.ps1 monitor -Port COMx
    ```
 
-4. Do a first upload for one board of each other family (UNO/Nano, ESP32, ESP8266) and record results in the
+5. Do a first upload for one board of each other family (UNO/Nano, ESP32, ESP8266) and record results in the
    [Session Log](#session-log).
-5. On any **other** Windows 11 PC used for Arduino 101 uploads, install the DFU driver with Zadig first
+6. On any **other** Windows 11 PC used for Arduino 101 uploads, install the DFU driver with Zadig first
    (`SETUP_GUIDE.md` > Step 4 > *Windows 11: Intel drivers rejected, use Zadig instead*).
 
 ## Resume on This Machine
@@ -177,11 +179,12 @@ Result of `.\tools\arduino\arduino.ps1 compile all` on 2026-10-20:
 | Sketch | FQBN | Flash used |
 | --- | --- | --- |
 | HauntedHouseRF | `Intel:arc32:arduino_101` | 23,300 B (14%) |
-| Arduino101_Node | `Intel:arc32:arduino_101` | 19,452 B (12%) |
+| Arduino101_Node | `Intel:arc32:arduino_101` | 19,476 B (12%) |
 | Arduino101_SimpleIRNegativeTrigger | `Intel:arc32:arduino_101` | 14,960 B (9%) |
 | Arduino101_SimpleIRNegativeTrigger15s | `Intel:arc32:arduino_101` | 14,964 B (9%) |
 | Arduino101_SimpleIRNegativeTrigger60s | `Intel:arc32:arduino_101` | 14,964 B (9%) |
 | Arduino101_TimedTriggerRelay | `Intel:arc32:arduino_101` | 16,792 B (10%) |
+| Arduino101_SimpleIRNegativeTriggerCode0x0 | `Intel:arc32:arduino_101` | 16,608 B (10%) |
 | UNO_Node | `arduino:avr:uno` | 10,522 B (32%) |
 | UNO_SimpleIRNegativeTrigger | `arduino:avr:uno` | 9,414 B (29%) |
 | Nano_Node | `arduino:avr:nano:cpu=atmega328` | 10,226 B (33%) |
@@ -203,6 +206,10 @@ Expected warning: on Arduino 101 sketches, `rc-switch` says it "may be incompati
 - **Arduino 101 on Windows 11:** Intel `dpinst` drivers fail (`0x80030000`, unsigned catalogs). Install WinUSB for VID `8087` PID `0ABA`
   with Zadig (Device > Create New Device). Without it, uploads time out at `Waiting for device...` even with MASTER RESET.
 - **`Serial port busy` / `Access denied` on upload:** another program holds the COM port. Close serial monitors and unplug/replug the board.
+- **Arduino 101 interrupts:** `attachInterrupt(..., CHANGE)` only works on SoC GPIO pins D2, D4, D7, D8, and D10-D13. On ARC GPIO
+  pins (D0, D1, D3, D5, D6, D9, A0-A5), the core silently turns it into falling-edge only. rc-switch therefore needs D2; RF on D3 uses
+  the polling decoder in `Arduino101_SimpleIRNegativeTriggerCode0x0`.
+- **rc-switch never reports code 0:** `available()` treats 0 as "nothing received". Use the polling decoder sketch to trigger on `0x0`.
 - **Port auto-detect:** `upload` without `-Port` only works when exactly one connected board matches the sketch's board type.
   Boards with CH340/CP210x USB bridges (most ESP boards) are not identified. Pass `-Port` for them.
 - **PowerShell 5.1 stderr:** ESP cores write size reports to stderr. `arduino.ps1` merges stderr so these aren't treated as failures. Keep that behavior if you edit `Invoke-Cli`.
@@ -262,3 +269,16 @@ Expected warning: on Arduino 101 sketches, `rc-switch` says it "may be incompati
 - Added to `sketches.json` and the VS Code task picker. Compiles with `--warnings all` clean. Not yet uploaded or bench-tested.
 - Fixed an `arduino.ps1 intellisense <name>` bug: a partial refresh dropped the existing entries
   (Windows PowerShell 5.1 `ConvertFrom-Json` array handling).
+
+### 2026-10-20: RF code 0x0 trigger on D3
+
+- Converted the user-copied `Arduino101_SimpleIRNegativeTriggerCode0x0` (copy of the base IR sketch) to a **433 MHz RF**
+  receiver on D3, matching the existing board wiring. Renamed the `.ino` to match the folder (arduino-cli requirement).
+- D3 can't run rc-switch: it's an ARC GPIO with no `CHANGE` interrupt on the Curie core. The sketch polls D3 and decodes with
+  rc-switch's protocol table and rules (protocols 1-12), so the code values match. It also reports code 0, which rc-switch can't.
+- Prints every confirmed code (value, bits, protocol, pulse length) once per press. Only `TRIGGER_CODE` `0x0` pulls D4 LOW for 500 ms.
+  Noise filter: at least 12 bits and 2 identical frames.
+- Decoder logic checked with a PowerShell port and synthetic frames: `0x0` and `0x5A5A5A` (24-bit) decode, and 2,000 random noise edges give 0 decodes.
+- Fixed `Arduino101_Node`: removed the dead `received == 0x0` branch (rc-switch can't report 0), and corrected the header text and
+  `components/arduino101/PINOUT.md`. Behavior is unchanged: any code pulses Relay 1 while `pulseCode` is unset.
+- Not yet uploaded or tested with a real remote.

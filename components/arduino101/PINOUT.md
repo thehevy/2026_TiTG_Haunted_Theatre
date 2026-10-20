@@ -1,7 +1,7 @@
 # Arduino 101 Pinout Guide
 
 **Created:** 2026-08-07
-**Last Updated:** 2026-08-14
+**Last Updated:** 2026-10-20
 
 Target sketch:
 
@@ -11,10 +11,10 @@ Target sketch:
 
 | Function               | Arduino 101 Pin | Notes                                                                                                                       |
 | ---------------------- | --------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| RF receiver data       | D2              | Used for RF configuration/programming. When code `0x00` is received, it triggers Relay 1 only.                             |
+| RF receiver data       | D2              | RF receive via rc-switch (needs a both-edge interrupt pin). Any received code pulses Relay 1 while `pulseCode` is unset (0 = any). rc-switch never reports code `0x0`. |
 | Positive trigger input | D7              | Active HIGH input. Keeps Relay 2 active only while D7 remains HIGH. Use a pull-down resistor so it stays LOW by default. |
 | Negative trigger input | D8              | Active LOW input. Keeps Relay 3 active only while D8 remains LOW. Use a pull-up resistor or the internal pull-up.          |
-| Relay 1 output         | D4              | Single momentary pulse output for the RF `0x00` trigger and any configured pulse code.                                    |
+| Relay 1 output         | D4              | Single momentary pulse output for RF codes that match `pulseCode` (any code by default).                                  |
 | Relay 2 output         | D5              | Held active while D7 is HIGH. Not used for RF pulse timing in the current sketch.                                        |
 | Relay 3 output         | D6              | Held active while D8 is LOW. Not used for RF pulse timing in the current sketch.                                         |
 
@@ -119,7 +119,7 @@ flowchart LR
 - D2: RF receiver data input used for programming.
 - D7: positive trigger input, active HIGH. D7 drives Relay 2 only while held HIGH.
 - D8: negative trigger input, active LOW. D8 drives Relay 3 only while held LOW.
-- D4: relay 1 pulse output for the RF `0x00` trigger and any configured pulse code.
+- D4: relay 1 pulse output for RF codes that match `pulseCode` (any code by default).
 - D5: relay 2 output, active while D7 remains HIGH.
 - D6: relay 3 output, active while D8 remains LOW.
 
@@ -138,5 +138,6 @@ flowchart LR
 4. Release D7 and verify Relay 2 turns off.
 5. Pull D8 LOW and verify `Input trigger: NEGATIVE -> Relay 3 active while D8 stays LOW` message.
 6. Release D8 and verify Relay 3 turns off.
-7. Transmit RF code `0x00` and verify Relay 1 pulses once.
+7. Transmit any RF code and verify `RF received:` prints and Relay 1 pulses once (with `pulseCode` unset).
+   To trigger on RF code `0x0`, use `Arduino101_SimpleIRNegativeTriggerCode0x0` instead; rc-switch cannot report `0x0`.
 8. Confirm the startup banner shows `Default RF timeout: none`.
