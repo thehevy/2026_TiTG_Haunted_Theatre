@@ -26,6 +26,7 @@
     "Arduino101_TimedTriggerRelay": { "path": "components/arduino101/Arduino101_TimedTriggerRelay", "fqbn": "Intel:arc32:arduino_101" },
     "Arduino101_LaserTagIRNegativeTrigger": { "path": "components/arduino101/Arduino101_LaserTagIRNegativeTrigger", "fqbn": "Intel:arc32:arduino_101" },
     "Arduino101_LaserTagIRNegativeTrigger5s": { "path": "components/arduino101/Arduino101_LaserTagIRNegativeTrigger5s", "fqbn": "Intel:arc32:arduino_101" },
+    "Arduino101_LaserTagIRNegativeTrigger60s": { "path": "components/arduino101/Arduino101_LaserTagIRNegativeTrigger60s", "fqbn": "Intel:arc32:arduino_101" },
     "UNO_Node": { "path": "components/uno/UNO_Node", "fqbn": "arduino:avr:uno" },
     "UNO_SimpleIRNegativeTrigger": { "path": "components/uno/UNO_SimpleIRNegativeTrigger", "fqbn": "arduino:avr:uno" },
     "Nano_Node": { "path": "components/nano/Nano_Node", "fqbn": "arduino:avr:nano:cpu=atmega328" },
