@@ -14,11 +14,12 @@
     .\tools\arduino\arduino.ps1 compile all
     .\tools\arduino\arduino.ps1 upload Arduino101_Node -Port COM5
     .\tools\arduino\arduino.ps1 monitor -Port COM5
+    .\tools\arduino\arduino.ps1 intellisense
 #>
 [CmdletBinding()]
 param(
     [Parameter(Position = 0)]
-    [ValidateSet('list', 'ports', 'compile', 'upload', 'monitor', 'setup')]
+    [ValidateSet('list', 'ports', 'compile', 'upload', 'monitor', 'setup', 'intellisense')]
     [string]$Action = 'list',
 
     [Parameter(Position = 1)]
@@ -78,6 +79,92 @@ function Find-Port {
     throw "Could not auto-detect a single port for $BoardFqbn. Pass -Port COMx. Detected ports:`n$list"
 }
 
+# Splits a gcc response file (@file) using gcc rules: whitespace separates, quotes group, backslash escapes.
+function Split-ResponseText {
+    param([string]$Text)
+    $tokens = New-Object System.Collections.Generic.List[string]
+    $sb = New-Object System.Text.StringBuilder
+    $quote = [char]0
+    $hasToken = $false
+    for ($i = 0; $i -lt $Text.Length; $i++) {
+        $c = $Text[$i]
+        if ($c -eq '\' -and ($i + 1) -lt $Text.Length) { [void]$sb.Append($Text[++$i]); $hasToken = $true; continue }
+        if ($quote -ne [char]0) {
+            if ($c -eq $quote) { $quote = [char]0 } else { [void]$sb.Append($c) }
+            continue
+        }
+        if ($c -eq '"' -or $c -eq "'") { $quote = $c; $hasToken = $true; continue }
+        if ([char]::IsWhiteSpace($c)) {
+            if ($hasToken) { $tokens.Add($sb.ToString()); [void]$sb.Clear(); $hasToken = $false }
+            continue
+        }
+        [void]$sb.Append($c); $hasToken = $true
+    }
+    if ($hasToken) { $tokens.Add($sb.ToString()) }
+    return , $tokens.ToArray()
+}
+
+# Expands @response files and rewrites -iprefix/-iwithprefixbefore as plain -I so the C/C++ extension can read them.
+function Expand-CompilerArgs {
+    param([string[]]$InputArgs)
+    $out = New-Object System.Collections.Generic.List[string]
+    $prefix = ''
+    $queue = New-Object System.Collections.Generic.Queue[string]
+    foreach ($a in $InputArgs) { $queue.Enqueue($a) }
+    while ($queue.Count -gt 0) {
+        $a = $queue.Dequeue()
+        if ($a.StartsWith('@') -and (Test-Path -LiteralPath $a.Substring(1))) {
+            $inner = Split-ResponseText (Get-Content -LiteralPath $a.Substring(1) -Raw)
+            $rest = $queue.ToArray(); $queue.Clear()
+            foreach ($x in @($inner) + @($rest)) { $queue.Enqueue($x) }
+            continue
+        }
+        if ($a -eq '-iprefix') { $prefix = $queue.Dequeue(); continue }
+        if ($a.StartsWith('-iprefix')) { $prefix = $a.Substring(8); continue }
+        if ($a -eq '-iwithprefixbefore' -or $a -eq '-iwithprefix') { $out.Add('-I' + $prefix + $queue.Dequeue()); continue }
+        if ($a.StartsWith('-iwithprefixbefore')) { $out.Add('-I' + $prefix + $a.Substring(18)); continue }
+        $out.Add($a)
+    }
+    return , $out.ToArray()
+}
+
+function New-IntelliSenseEntry {
+    param($Entry)
+    $buildPath = Join-Path $repoRoot ".build\$($Entry.Name)"
+    try {
+        Invoke-Cli @('compile', '--fqbn', $Entry.Fqbn, '--only-compilation-database', '--build-path', $buildPath, $Entry.Path) | Out-Null
+    }
+    catch {
+        # Some legacy cores (Intel Curie) run post-link hooks that fail when linking is skipped; a full build also writes the database.
+        Write-Host 'Compile-database-only mode failed; falling back to a full compile.' -ForegroundColor Yellow
+        Invoke-Cli @('compile', '--fqbn', $Entry.Fqbn, '--build-path', $buildPath, $Entry.Path) | Out-Null
+    }
+    $inoName = (Split-Path $Entry.Path -Leaf) + '.ino'
+    $db = Get-Content (Join-Path $buildPath 'compile_commands.json') -Raw | ConvertFrom-Json
+    $sketchCmd = @($db | Where-Object { $_.file -like "*\sketch\$inoName.cpp" -or $_.file -like "*/sketch/$inoName.cpp" })[0]
+    if (-not $sketchCmd) { throw "No compile command found for $inoName" }
+
+    $expanded = Expand-CompilerArgs @($sketchCmd.arguments)
+    $compiler = $expanded[0]
+    $flags = New-Object System.Collections.Generic.List[string]
+    $includeDirs = New-Object System.Collections.Generic.List[string]
+    for ($i = 1; $i -lt $expanded.Count; $i++) {
+        $a = $expanded[$i]
+        if ($a -eq '-o') { $i++; continue }
+        if ($a -in @('-c', '-MMD', '-MD') -or $a -eq $sketchCmd.file) { continue }
+        if ($a.StartsWith('-I')) { $includeDirs.Add($a.Substring(2)) }
+        $flags.Add($a)
+    }
+
+    # The .ino has no #include <Arduino.h>; arduino-cli adds it when generating .ino.cpp, so force-include it here.
+    $arduinoH = $includeDirs | ForEach-Object { Join-Path $_ 'Arduino.h' } | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
+    $inoPath = Join-Path $Entry.Path $inoName
+    $arguments = @($compiler) + $flags.ToArray() + @('-x', 'c++')
+    if ($arduinoH) { $arguments += @('-include', $arduinoH) }
+    $arguments += $inoPath
+    [pscustomobject]@{ directory = $Entry.Path; file = $inoPath; arguments = $arguments }
+}
+
 $script:cli = Get-ArduinoCli
 
 switch ($Action) {
@@ -133,6 +220,26 @@ switch ($Action) {
         }
         Write-Host "=== Uploading $($entry.Name) [$($entry.Fqbn)] to $Port" -ForegroundColor Cyan
         Invoke-Cli @('compile', '--fqbn', $entry.Fqbn, '--upload', '--port', $Port, $entry.Path)
+    }
+
+    'intellisense' {
+        $dbPath = Join-Path $repoRoot '.build\compile_commands.json'
+        $names = if (-not $Sketch -or $Sketch -eq 'all') { @($config.sketches.PSObject.Properties.Name) } else { @($Sketch) }
+        $entries = @{}
+        if ($names.Count -lt $config.sketches.PSObject.Properties.Name.Count -and (Test-Path $dbPath)) {
+            foreach ($e in @(Get-Content $dbPath -Raw | ConvertFrom-Json)) { $entries[$e.file] = $e }
+        }
+        foreach ($name in $names) {
+            $entry = Get-SketchEntry $name
+            Write-Host "=== IntelliSense flags for $($entry.Name) [$($entry.Fqbn)]" -ForegroundColor Cyan
+            $item = New-IntelliSenseEntry $entry
+            $entries[$item.file] = $item
+        }
+        New-Item -ItemType Directory -Force (Split-Path $dbPath) | Out-Null
+        $json = ConvertTo-Json -InputObject @($entries.Values | Sort-Object file) -Depth 5
+        [IO.File]::WriteAllText($dbPath, $json, (New-Object System.Text.UTF8Encoding($false)))
+        Write-Host "Wrote $($entries.Count) entries to $dbPath" -ForegroundColor Green
+        Write-Host 'If VS Code does not pick up the change, run "C/C++: Reset IntelliSense Database".' -ForegroundColor Yellow
     }
 
     'monitor' {

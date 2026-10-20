@@ -123,6 +123,7 @@ All sketches can be compiled and uploaded with arduino-cli from PowerShell or VS
 .\tools\arduino\arduino.ps1 compile all
 .\tools\arduino\arduino.ps1 upload Arduino101_Node -Port COM5
 .\tools\arduino\arduino.ps1 monitor -Port COM5
+.\tools\arduino\arduino.ps1 intellisense                       # VS Code C/C++ IntelliSense for all sketches
 ```
 
 Arduino 101 firmware updates still require Arduino IDE 1.8.19 (Tools > Firmware Updater).

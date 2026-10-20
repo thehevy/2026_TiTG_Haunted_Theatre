@@ -23,6 +23,11 @@ htmlcov/
 Thumbs.db
 .vscode/*
 !.vscode/tasks.json
+!.vscode/settings.json
+!.vscode/c_cpp_properties.json
+
+# arduino-cli build output and generated IntelliSense compile database
+.build/
 
 # Logs
 *.log

@@ -250,6 +250,24 @@ In VS Code, the same actions are available from **Terminal > Run Task** (`Arduin
 
 COM5 can also be taken by other devices, such as a Bluetooth serial link. Always run `ports` and confirm the board before you upload.
 
+### VS Code IntelliSense for sketches
+
+The C/C++ extension (`ms-vscode.cpptools`) needs each sketch's board-specific compiler, include paths, and defines.
+The repo's `.vscode/c_cpp_properties.json` points it at `.build/compile_commands.json`, and `.vscode/settings.json` makes VS Code treat `*.ino` files as C++.
+`.build/` is machine-specific and gitignored, so generate it on each machine:
+
+```powershell
+.\tools\arduino\arduino.ps1 intellisense                  # all sketches (several minutes the first time)
+.\tools\arduino\arduino.ps1 intellisense ESP8266_Node     # refresh one sketch
+```
+
+Or run **Terminal > Run Task > Arduino: Refresh IntelliSense (all sketches)**.
+
+Re-run it after you add a sketch, add an `#include` for a new library, or upgrade a board core. If squiggles don't update, run **C/C++: Reset IntelliSense Database** from the Command Palette.
+If VS Code still shows the **Configure IntelliSense** prompt, select the `Arduino (arduino-cli)` configuration.
+
+Limitation: the Arduino build auto-generates function prototypes, but IntelliSense reads the raw `.ino`. If a function is called before its definition in the file, IntelliSense may flag it even though the sketch compiles.
+
 ## Optional: IDE 2.x Usage
 
 After successful setup and firmware update in IDE 1.8.19, you can try IDE 2.x for editing/uploading.

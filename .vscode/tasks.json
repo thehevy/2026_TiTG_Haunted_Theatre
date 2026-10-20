@@ -40,6 +40,13 @@
       "problemMatcher": []
     },
     {
+      "label": "Arduino: Refresh IntelliSense (all sketches)",
+      "type": "process",
+      "command": "powershell.exe",
+      "args": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "${workspaceFolder}/tools/arduino/arduino.ps1", "intellisense"],
+      "problemMatcher": []
+    },
+    {
       "label": "Arduino: Setup toolchain (cores + libraries)",
       "type": "process",
       "command": "powershell.exe",

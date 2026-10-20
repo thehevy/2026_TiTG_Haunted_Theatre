@@ -26,6 +26,8 @@ As of 2026-10-20:
 - All 17 sketches compile with arduino-cli (see [baseline](#compile-verification-baseline)).
 - `ESP8266_Node.ino` build break is fixed (removed an orphaned block after `loop()`).
 - **No upload has been tested yet.** No Arduino board was connected during setup.
+- VS Code C/C++ IntelliSense is configured via `.build/compile_commands.json`. That file is machine-specific; generate it with
+  `.\tools\arduino\arduino.ps1 intellisense` (already generated on the setup machine).
 - On the setup machine, COM3 is Intel AMT SOL and COM4/COM5 are Bluetooth serial links. The
   Arduino 101 is **not** currently on COM5. Confirm the port after you plug it in.
 
@@ -134,7 +136,15 @@ Windows, PowerShell 5.1 or later.
    .\tools\arduino\arduino.ps1 compile all
    ```
 
-   Compare the results with the [baseline](#compile-verification-baseline), then continue with [Next Steps](#next-steps).
+   Compare the results with the [baseline](#compile-verification-baseline).
+
+7. Generate the IntelliSense compile database for VS Code, then reload the VS Code window:
+
+   ```powershell
+   .\tools\arduino\arduino.ps1 intellisense
+   ```
+
+   Continue with [Next Steps](#next-steps).
 
 ## Toolchain Reference
 
@@ -161,6 +171,7 @@ Helper commands (`.\tools\arduino\arduino.ps1 <action>`):
 | `compile <name\|all>` | Compile one or all sketches |
 | `upload <name> -Port COMx` | Compile and upload. Add `-Fqbn` to override the board. |
 | `monitor -Port COMx` | Serial monitor (default 115200) |
+| `intellisense [name\|all]` | Generate `.build/compile_commands.json` for VS Code C/C++ IntelliSense |
 
 VS Code: **Terminal > Run Task > Arduino: ...**. `Ctrl+Shift+B` compiles the selected sketch.
 
@@ -203,6 +214,11 @@ Expected warning: on Arduino 101 sketches, `rc-switch` says it "may be incompati
 - **Nano clones:** if an upload fails with sync errors, retry with `-Fqbn arduino:avr:nano:cpu=atmega328old`.
 - **ESP32:** if an upload stops at `Connecting...`, hold BOOT until writing starts.
 - **ESP-01:** GPIO0 must be held LOW at reset to enter flash mode. Use a 3.3V serial adapter.
+- **IntelliSense "Configure IntelliSense" prompt:** run `.\tools\arduino\arduino.ps1 intellisense`, reload VS Code, and select the
+  `Arduino (arduino-cli)` configuration. The Intel Curie core can't produce a compile database on its own (a post-link hook fails),
+  so the script falls back to a full compile for Arduino 101 sketches.
+- **IntelliSense and prototypes:** IntelliSense reads the raw `.ino`, without the prototypes Arduino generates. A call to a function
+  defined later in the file may be flagged even though it compiles.
 
 ## Session Log
 
@@ -218,3 +234,12 @@ Expected warning: on Arduino 101 sketches, `rc-switch` says it "may be incompati
 - Documented the CLI workflow in `SETUP_GUIDE.md` and `README.md`.
 - Commit `4a866bf` pushed to `main`.
 - Hardware uploads are still untested. See [Next Steps](#next-steps).
+
+### 2026-10-20: VS Code IntelliSense fix
+
+- The C/C++ extension showed a **Configure IntelliSense** prompt because no configuration existed and `.ino` wasn't associated with C++.
+- Added the `intellisense` action to `arduino.ps1`. It exports each sketch's real compile flags from arduino-cli, expands `@response`
+  files and `-iprefix` includes (ESP32), force-includes `Arduino.h`, and maps the flags to each `.ino` in
+  `.build/compile_commands.json`.
+- Committed `.vscode/c_cpp_properties.json` and `.vscode/settings.json`, and added the **Arduino: Refresh IntelliSense** task.
+  `.build/` is gitignored.

@@ -1,0 +1,9 @@
+{
+  "configurations": [
+    {
+      "name": "Arduino (arduino-cli)",
+      "compileCommands": "${workspaceFolder}/.build/compile_commands.json"
+    }
+  ],
+  "version": 4
+}
