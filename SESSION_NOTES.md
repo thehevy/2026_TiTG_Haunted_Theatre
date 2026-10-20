@@ -31,9 +31,10 @@ As of 2026-10-20:
   Windows 11 (unsigned catalogs). See `SETUP_GUIDE.md` > Step 4 > *Windows 11: Intel drivers rejected, use Zadig instead*.
 - VS Code C/C++ IntelliSense is configured via `.build/compile_commands.json`. That file is machine-specific; generate it with
   `.\tools\arduino\arduino.ps1 intellisense` (already generated on the setup machine).
-- On the setup machine, COM3 is Intel AMT SOL and COM4/COM5 are Bluetooth serial links. Two Arduino 101 units have been used:
-  **COM6** (serial `...610005K`) and **COM7** (serial `...61000Q4`). Always confirm with `ports` after plugging in.
-- **COM7 runs `Arduino101_LaserTagIRNegativeTrigger`** and is bench-verified: laser tag gun shots trigger, and iPhone IR is ignored.
+- On the setup machine, COM3 is Intel AMT SOL and COM4/COM5 are Bluetooth serial links. Three Arduino 101 units have been used:
+  **COM6** (serial `...610005K`), **COM7** (serial `...61000Q4`), and **COM8** (serial `...61000V7`). Always confirm with `ports` after plugging in.
+- Current board loads: **COM6** = `Arduino101_LaserTagIRNegativeTrigger5s`, **COM7** = `Arduino101_LaserTagIRNegativeTrigger`
+  (bench-verified: gun shots trigger, iPhone IR ignored), **COM8** = `Arduino101_LaserTagIRNegativeTrigger60s`.
 
 ## Next Steps
 
@@ -300,4 +301,5 @@ Expected warning: on Arduino 101 sketches, `rc-switch` says it "may be incompati
 
 - Added `Arduino101_LaserTagIRNegativeTrigger5s`: identical to the laser tag sketch except `TRIGGER_PULSE_MS = 5000` and the
   `(5 s)` banner/title. Same wiring and decoder. Uploaded to **COM6** (heartbeat confirmed).
-- Added `Arduino101_LaserTagIRNegativeTrigger60s`: same, with `TRIGGER_PULSE_MS = 60000` and the `(60 s)` banner/title. Compiles; not yet uploaded.
+- Added `Arduino101_LaserTagIRNegativeTrigger60s`: same, with `TRIGGER_PULSE_MS = 60000` and the `(60 s)` banner/title.
+  Uploaded to **COM8** (third Arduino 101, serial `...61000V7`); heartbeat confirmed.
