@@ -1,7 +1,7 @@
 ﻿# Arduino 101 Setup Guide (Windows, COM5)
 
 **Created:** 2026-07-30
-**Last Updated:** 2026-08-07
+**Last Updated:** 2026-10-20
 
 ## Table of Contents
 
@@ -20,6 +20,7 @@
 - [Required Libraries for Project Sketches](#required-libraries-for-project-sketches)
 - [Troubleshooting](#troubleshooting)
 - [Using VS Code For Sketch Editing](#using-vs-code-for-sketch-editing)
+- [Command-Line Compile and Upload (arduino-cli)](#command-line-compile-and-upload-arduino-cli)
 - [Optional: IDE 2.x Usage](#optional-ide-2x-usage)
 
 ## Goal
@@ -198,6 +199,56 @@ Recommended workflow:
 6. Update firmware first if needed, then upload from Arduino IDE 1.8.19.
 
 This keeps the editor flexible while preserving the most reliable upload path for Arduino 101.
+
+To compile and upload without leaving VS Code, use the arduino-cli workflow below. Keep IDE 1.8.19 for the Curie Firmware Updater.
+
+## Command-Line Compile and Upload (arduino-cli)
+
+arduino-cli shares the board cores (`%LOCALAPPDATA%\Arduino15`) and sketchbook libraries (`Documents\Arduino\libraries`) with Arduino IDE 1.8.19, so anything installed by one is visible to the other.
+
+Sketch names, board FQBNs, required cores, and required libraries are defined in `tools/arduino/sketches.json`. The helper script is `tools/arduino/arduino.ps1`.
+
+### One-time install (Windows)
+
+1. Download the latest `arduino-cli_<version>_Windows_64bit.zip` from the [arduino-cli releases page](https://github.com/arduino/arduino-cli/releases/latest).
+2. Extract `arduino-cli.exe` to `%LOCALAPPDATA%\Programs\arduino-cli` and add that folder to your user `Path`.
+3. Open a new PowerShell window in the repo root and run:
+
+   ```powershell
+   arduino-cli config init
+   .\tools\arduino\arduino.ps1 setup
+   ```
+
+`setup` adds the ESP32/ESP8266 Boards Manager URLs, sets the arduino-cli proxy from `$env:HTTPS_PROXY` (for example `http://proxy-dmz.intel.com:912`), installs `Intel:arc32@2.0.4`, `arduino:avr`, `esp32:esp32`, `esp8266:esp8266`, and installs every library in `sketches.json`. To set a different proxy, pass `-Proxy http://host:port`. To clear it, pass `-Proxy ''`.
+
+### Daily use
+
+```powershell
+.\tools\arduino\arduino.ps1 list                               # sketch names and FQBNs
+.\tools\arduino\arduino.ps1 ports                              # connected boards and COM ports
+.\tools\arduino\arduino.ps1 compile Arduino101_Node            # compile one sketch
+.\tools\arduino\arduino.ps1 compile all                        # compile every sketch
+.\tools\arduino\arduino.ps1 upload Arduino101_Node -Port COM5  # compile + upload
+.\tools\arduino\arduino.ps1 monitor -Port COM5                 # serial monitor at 115200
+```
+
+If `-Port` is omitted, `upload` auto-detects the port only when exactly one connected board matches the sketch's board type. ESP boards that use CH340/CP210x USB bridges are not auto-identified, so pass `-Port` for them.
+
+In VS Code, the same actions are available from **Terminal > Run Task** (`Arduino: Compile sketch`, `Arduino: Upload sketch`, `Arduino: Compile all sketches`, `Arduino: Serial monitor`, `Arduino: List ports`). `Ctrl+Shift+B` runs `Arduino: Compile sketch`.
+
+### Board-specific upload notes
+
+| Board | FQBN | Upload note |
+| --- | --- | --- |
+| Arduino 101 | `Intel:arc32:arduino_101` | Confirm the port shows VID `8087` PID `0AB6` in `ports`. Close the serial monitor first. If upload stalls, press MASTER RESET right as the upload starts. Use IDE 1.8.19 for firmware updates. |
+| UNO | `arduino:avr:uno` | Standard upload. |
+| Nano | `arduino:avr:nano:cpu=atmega328` | For old-bootloader clones, add `-Fqbn arduino:avr:nano:cpu=atmega328old`. |
+| ESP32, WeMos D1 R32, Acebott ESP32-Max | `esp32:esp32:esp32` | If upload stops at `Connecting...`, hold BOOT until writing starts. |
+| ESP32-S3 | `esp32:esp32:esp32s3` | Same BOOT-button workaround. |
+| ESP8266 NodeMCU / ESP-12F | `esp8266:esp8266:nodemcuv2` | Standard upload. |
+| ESP-01 | `esp8266:esp8266:generic` | Hold GPIO0 LOW at reset to enter flash mode. Use a 3.3V serial adapter. |
+
+COM5 can also be taken by other devices, such as a Bluetooth serial link. Always run `ports` and confirm the board before you upload.
 
 ## Optional: IDE 2.x Usage
 

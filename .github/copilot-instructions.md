@@ -43,6 +43,7 @@ When answering requests in this workspace:
 ## Network/Install Notes
 
 - Boards Manager URL: [Arduino package index](https://downloads.arduino.cc/packages/package_index.json)
+- CLI builds: use `tools/arduino/arduino.ps1` with the sketch/FQBN map in `tools/arduino/sketches.json`; add new sketches to that map and to the `sketch` input in `.vscode/tasks.json`
 
 - If behind proxy, mention host/port configuration in IDE preferences
 - For controller deployment, keep MQTT and database credentials in .env, not in committed source

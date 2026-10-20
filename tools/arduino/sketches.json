@@ -1,0 +1,39 @@
+{
+  "additionalUrls": [
+    "https://espressif.github.io/arduino-esp32/package_esp32_index.json",
+    "https://arduino.esp8266.com/stable/package_esp8266com_index.json"
+  ],
+  "cores": [
+    "Intel:arc32@2.0.4",
+    "arduino:avr",
+    "esp32:esp32",
+    "esp8266:esp8266"
+  ],
+  "libraries": [
+    "rc-switch",
+    "IRremote",
+    "PubSubClient",
+    "VL53L1X",
+    "ESP32Servo",
+    "DFRobotDFPlayerMini"
+  ],
+  "sketches": {
+    "HauntedHouseRF": { "path": "HauntedHouseRF", "fqbn": "Intel:arc32:arduino_101" },
+    "Arduino101_Node": { "path": "components/arduino101/Arduino101_Node", "fqbn": "Intel:arc32:arduino_101" },
+    "Arduino101_SimpleIRNegativeTrigger": { "path": "components/arduino101/Arduino101_SimpleIRNegativeTrigger", "fqbn": "Intel:arc32:arduino_101" },
+    "Arduino101_SimpleIRNegativeTrigger15s": { "path": "components/arduino101/Arduino101_SimpleIRNegativeTrigger15s", "fqbn": "Intel:arc32:arduino_101" },
+    "Arduino101_SimpleIRNegativeTrigger60s": { "path": "components/arduino101/Arduino101_SimpleIRNegativeTrigger60s", "fqbn": "Intel:arc32:arduino_101" },
+    "UNO_Node": { "path": "components/uno/UNO_Node", "fqbn": "arduino:avr:uno" },
+    "UNO_SimpleIRNegativeTrigger": { "path": "components/uno/UNO_SimpleIRNegativeTrigger", "fqbn": "arduino:avr:uno" },
+    "Nano_Node": { "path": "components/nano/Nano_Node", "fqbn": "arduino:avr:nano:cpu=atmega328" },
+    "ESP32_Node": { "path": "components/esp32/ESP32_Node", "fqbn": "esp32:esp32:esp32" },
+    "ESP32_SmartTracking_Node": { "path": "components/esp32/ESP32_SmartTracking_Node", "fqbn": "esp32:esp32:esp32" },
+    "ESP32S3_SmartTracking_Node": { "path": "components/esp32/ESP32S3_SmartTracking_Node", "fqbn": "esp32:esp32:esp32s3" },
+    "AcebottESP32Max_Node": { "path": "components/acebott_esp32_max/AcebottESP32Max_Node", "fqbn": "esp32:esp32:esp32" },
+    "WemosD1R32_Node": { "path": "components/wemos_d1_r32/WemosD1R32_Node", "fqbn": "esp32:esp32:esp32" },
+    "WemosD1R32_SimpleIRPositiveTrigger": { "path": "components/wemos_d1_r32/WemosD1R32_SimpleIRPositiveTrigger", "fqbn": "esp32:esp32:esp32" },
+    "ESP8266_Node": { "path": "components/esp8266/ESP8266_Node", "fqbn": "esp8266:esp8266:nodemcuv2" },
+    "ESP12F_SimpleIRPositiveTrigger": { "path": "components/esp8266/ESP12F_SimpleIRPositiveTrigger", "fqbn": "esp8266:esp8266:nodemcuv2" },
+    "ESP01_Node": { "path": "components/esp01/ESP01_Node", "fqbn": "esp8266:esp8266:generic" }
+  }
+}

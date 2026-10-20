@@ -1,0 +1,83 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Arduino: Compile sketch",
+      "type": "process",
+      "command": "powershell.exe",
+      "args": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "${workspaceFolder}/tools/arduino/arduino.ps1", "compile", "${input:sketch}"],
+      "group": { "kind": "build", "isDefault": true },
+      "problemMatcher": "$gcc"
+    },
+    {
+      "label": "Arduino: Upload sketch",
+      "type": "process",
+      "command": "powershell.exe",
+      "args": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "${workspaceFolder}/tools/arduino/arduino.ps1", "upload", "${input:sketch}", "-Port", "${input:port}"],
+      "problemMatcher": "$gcc"
+    },
+    {
+      "label": "Arduino: Compile all sketches",
+      "type": "process",
+      "command": "powershell.exe",
+      "args": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "${workspaceFolder}/tools/arduino/arduino.ps1", "compile", "all"],
+      "group": "build",
+      "problemMatcher": "$gcc"
+    },
+    {
+      "label": "Arduino: Serial monitor",
+      "type": "process",
+      "command": "powershell.exe",
+      "args": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "${workspaceFolder}/tools/arduino/arduino.ps1", "monitor", "-Port", "${input:port}"],
+      "isBackground": false,
+      "problemMatcher": []
+    },
+    {
+      "label": "Arduino: List ports",
+      "type": "process",
+      "command": "powershell.exe",
+      "args": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "${workspaceFolder}/tools/arduino/arduino.ps1", "ports"],
+      "problemMatcher": []
+    },
+    {
+      "label": "Arduino: Setup toolchain (cores + libraries)",
+      "type": "process",
+      "command": "powershell.exe",
+      "args": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "${workspaceFolder}/tools/arduino/arduino.ps1", "setup"],
+      "problemMatcher": []
+    }
+  ],
+  "inputs": [
+    {
+      "id": "sketch",
+      "type": "pickString",
+      "description": "Sketch to build (see tools/arduino/sketches.json)",
+      "options": [
+        "Arduino101_Node",
+        "Arduino101_SimpleIRNegativeTrigger",
+        "Arduino101_SimpleIRNegativeTrigger15s",
+        "Arduino101_SimpleIRNegativeTrigger60s",
+        "HauntedHouseRF",
+        "UNO_Node",
+        "UNO_SimpleIRNegativeTrigger",
+        "Nano_Node",
+        "ESP32_Node",
+        "ESP32_SmartTracking_Node",
+        "ESP32S3_SmartTracking_Node",
+        "AcebottESP32Max_Node",
+        "WemosD1R32_Node",
+        "WemosD1R32_SimpleIRPositiveTrigger",
+        "ESP8266_Node",
+        "ESP12F_SimpleIRPositiveTrigger",
+        "ESP01_Node"
+      ],
+      "default": "Arduino101_Node"
+    },
+    {
+      "id": "port",
+      "type": "promptString",
+      "description": "Serial port (run 'Arduino: List ports' to check)",
+      "default": "COM5"
+    }
+  ]
+}

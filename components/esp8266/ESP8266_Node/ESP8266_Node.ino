@@ -303,18 +303,3 @@ void loop() {
     }
   }
 }
-
-  if (timeReached(now, relay2LockoutUntil)) {
-    relay2LockoutUntil = 0;
-  }
-
-  for (uint8_t i = 0; i < 3; ++i) {
-    if (relayOffAt[i] != 0 && static_cast<long>(now - relayOffAt[i]) >= 0) {
-      relayOffAt[i] = 0;
-    }
-  }
-
-  if (relayOffAt[0] == 0) setRelay(RELAY1_PIN, false);
-  if (relayOffAt[1] == 0) setRelay(RELAY2_PIN, false);
-  if (relayOffAt[2] == 0) setRelay(RELAY3_PIN, relayState[2]);
-}

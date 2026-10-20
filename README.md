@@ -1,7 +1,7 @@
 ﻿# 2026 TiTG Haunted Theatre
 
 **Created:** 2026-07-30
-**Last Updated:** 2026-08-07
+**Last Updated:** 2026-10-20
 
 Centralized haunted-house control project for mixed hardware:
 
@@ -36,6 +36,7 @@ Recommended local setup:
 - Install Arduino IDE 1.8.19 and Arduino IDE 2.x side-by-side.
 - Use IDE 1.8.19 only for Arduino 101 tasks.
 - Use IDE 2.x for ESP32, ESP8266, UNO, and Nano tasks.
+- Or use arduino-cli from VS Code for every board. See [Command-Line Compile and Upload](#command-line-compile-and-upload).
 
 ## Repository Layout
 
@@ -56,6 +57,9 @@ Recommended local setup:
   - Pinout: `components/uno/PINOUT.md`
 - `central-controller/`
   - Web controller app and deployment assets
+- `tools/arduino/`
+  - `arduino.ps1` arduino-cli helper (setup, compile, upload, monitor)
+  - `sketches.json` sketch-to-board (FQBN) map, required cores, and libraries
 - `SETUP_GUIDE.md`
   - Arduino 101 setup, firmware update, and troubleshooting
 - `CENTRAL_CONTROLLER_PLAN.md`
@@ -106,6 +110,20 @@ From `central-controller/` on Rocky Linux:
 4. `sudo bash deploy/rocky-harden.sh`
 5. Update `/opt/haunt-controller/.env`
 6. `sudo systemctl restart haunt-controller`
+
+## Command-Line Compile and Upload
+
+All sketches can be compiled and uploaded with arduino-cli from PowerShell or VS Code tasks (**Terminal > Run Task > Arduino: ...**). Full install steps and per-board notes are in [SETUP_GUIDE.md](SETUP_GUIDE.md#command-line-compile-and-upload-arduino-cli).
+
+```powershell
+.\tools\arduino\arduino.ps1 setup                              # one time: board URLs, proxy, cores, libraries
+.\tools\arduino\arduino.ps1 ports                              # confirm the board's COM port
+.\tools\arduino\arduino.ps1 compile all
+.\tools\arduino\arduino.ps1 upload Arduino101_Node -Port COM5
+.\tools\arduino\arduino.ps1 monitor -Port COM5
+```
+
+Arduino 101 firmware updates still require Arduino IDE 1.8.19 (Tools > Firmware Updater).
 
 ## MQTT Topic Convention
 
