@@ -39,6 +39,7 @@ As of 2026-10-20:
 
 1. Install the COM7 laser tag board in the prop and test hits at real range and angles. If needed, restrict team/mode with
    `GUN_CODE_MASK`/`GUN_CODE_VALUE` (see its `PINOUT.md`). Flash the same sketch to other IR boards that should respond only to the gun.
+   For a 5-second relay pulse, use `Arduino101_LaserTagIRNegativeTrigger5s`.
 2. Upload and bench-test `Arduino101_TimedTriggerRelay` (see its `PINOUT.md` > Validation):
    `.\tools\arduino\arduino.ps1 upload Arduino101_TimedTriggerRelay -Port COM6`.
 3. Wire and bench-test the 60 s IR negative trigger on the Arduino 101 (COM6): confirm D4 goes LOW for 60 s on an IR signal
@@ -186,6 +187,7 @@ Result of `.\tools\arduino\arduino.ps1 compile all` on 2026-10-20:
 | Arduino101_SimpleIRNegativeTrigger60s | `Intel:arc32:arduino_101` | 14,964 B (9%) |
 | Arduino101_TimedTriggerRelay | `Intel:arc32:arduino_101` | 16,792 B (10%) |
 | Arduino101_LaserTagIRNegativeTrigger | `Intel:arc32:arduino_101` | 17,576 B (11%) |
+| Arduino101_LaserTagIRNegativeTrigger5s | `Intel:arc32:arduino_101` | 17,588 B (11%) |
 | UNO_Node | `arduino:avr:uno` | 10,522 B (32%) |
 | UNO_SimpleIRNegativeTrigger | `arduino:avr:uno` | 9,414 B (29%) |
 | Nano_Node | `arduino:avr:nano:cpu=atmega328` | 10,226 B (33%) |
@@ -292,3 +294,8 @@ Expected warning: on Arduino 101 sketches, `rc-switch` says it "may be incompati
 - `Arduino101_Node` uploaded to COM7 but produced no serial output. Likely cause: its rc-switch `CHANGE` interrupt on an unconnected
   (floating) D2 (the boards' receiver is on D3). Not investigated further; the COM7 board now runs the laser tag sketch.
 - `arduino.ps1 intellisense <name>` now also drops entries for sketch files that no longer exist.
+
+### 2026-10-20: Laser tag 5 s variant
+
+- Added `Arduino101_LaserTagIRNegativeTrigger5s`: identical to the laser tag sketch except `TRIGGER_PULSE_MS = 5000` and the
+  `(5 s)` banner/title. Same wiring and decoder. Compiles; not yet uploaded.
