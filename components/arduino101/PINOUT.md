@@ -139,5 +139,5 @@ flowchart LR
 5. Pull D8 LOW and verify `Input trigger: NEGATIVE -> Relay 3 active while D8 stays LOW` message.
 6. Release D8 and verify Relay 3 turns off.
 7. Transmit any RF code and verify `RF received:` prints and Relay 1 pulses once (with `pulseCode` unset).
-   To trigger on RF code `0x0`, use `Arduino101_SimpleIRNegativeTriggerCode0x0` instead; rc-switch cannot report `0x0`.
+   rc-switch cannot report code `0x0`; leave `pulseCode` unset or program a non-zero code.
 8. Confirm the startup banner shows `Default RF timeout: none`.

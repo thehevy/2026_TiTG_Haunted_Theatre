@@ -31,13 +31,14 @@ As of 2026-10-20:
   Windows 11 (unsigned catalogs). See `SETUP_GUIDE.md` > Step 4 > *Windows 11: Intel drivers rejected, use Zadig instead*.
 - VS Code C/C++ IntelliSense is configured via `.build/compile_commands.json`. That file is machine-specific; generate it with
   `.\tools\arduino\arduino.ps1 intellisense` (already generated on the setup machine).
-- On the setup machine, COM3 is Intel AMT SOL, COM4/COM5 are Bluetooth serial links, and the Arduino 101 enumerates as
-  **COM6**. Always confirm with `ports` after plugging in.
+- On the setup machine, COM3 is Intel AMT SOL and COM4/COM5 are Bluetooth serial links. Two Arduino 101 units have been used:
+  **COM6** (serial `...610005K`) and **COM7** (serial `...61000Q4`). Always confirm with `ports` after plugging in.
+- **COM7 runs `Arduino101_LaserTagIRNegativeTrigger`** and is bench-verified: laser tag gun shots trigger, and iPhone IR is ignored.
 
 ## Next Steps
 
-1. Upload `Arduino101_SimpleIRNegativeTriggerCode0x0` to COM6 and press each 433 MHz remote button. Record the printed codes and
-   confirm that `0x0` triggers the relay (see its `PINOUT.md` > Validation). If no button sends `0x0`, set `TRIGGER_CODE` to the code you want.
+1. Install the COM7 laser tag board in the prop and test hits at real range and angles. If needed, restrict team/mode with
+   `GUN_CODE_MASK`/`GUN_CODE_VALUE` (see its `PINOUT.md`). Flash the same sketch to other IR boards that should respond only to the gun.
 2. Upload and bench-test `Arduino101_TimedTriggerRelay` (see its `PINOUT.md` > Validation):
    `.\tools\arduino\arduino.ps1 upload Arduino101_TimedTriggerRelay -Port COM6`.
 3. Wire and bench-test the 60 s IR negative trigger on the Arduino 101 (COM6): confirm D4 goes LOW for 60 s on an IR signal
@@ -184,7 +185,7 @@ Result of `.\tools\arduino\arduino.ps1 compile all` on 2026-10-20:
 | Arduino101_SimpleIRNegativeTrigger15s | `Intel:arc32:arduino_101` | 14,964 B (9%) |
 | Arduino101_SimpleIRNegativeTrigger60s | `Intel:arc32:arduino_101` | 14,964 B (9%) |
 | Arduino101_TimedTriggerRelay | `Intel:arc32:arduino_101` | 16,792 B (10%) |
-| Arduino101_SimpleIRNegativeTriggerCode0x0 | `Intel:arc32:arduino_101` | 16,608 B (10%) |
+| Arduino101_LaserTagIRNegativeTrigger | `Intel:arc32:arduino_101` | 17,576 B (11%) |
 | UNO_Node | `arduino:avr:uno` | 10,522 B (32%) |
 | UNO_SimpleIRNegativeTrigger | `arduino:avr:uno` | 9,414 B (29%) |
 | Nano_Node | `arduino:avr:nano:cpu=atmega328` | 10,226 B (33%) |
@@ -207,9 +208,12 @@ Expected warning: on Arduino 101 sketches, `rc-switch` says it "may be incompati
   with Zadig (Device > Create New Device). Without it, uploads time out at `Waiting for device...` even with MASTER RESET.
 - **`Serial port busy` / `Access denied` on upload:** another program holds the COM port. Close serial monitors and unplug/replug the board.
 - **Arduino 101 interrupts:** `attachInterrupt(..., CHANGE)` only works on SoC GPIO pins D2, D4, D7, D8, and D10-D13. On ARC GPIO
-  pins (D0, D1, D3, D5, D6, D9, A0-A5), the core silently turns it into falling-edge only. rc-switch therefore needs D2; RF on D3 uses
-  the polling decoder in `Arduino101_SimpleIRNegativeTriggerCode0x0`.
-- **rc-switch never reports code 0:** `available()` treats 0 as "nothing received". Use the polling decoder sketch to trigger on `0x0`.
+  pins (D0, D1, D3, D5, D6, D9, A0-A5), the core silently turns it into falling-edge only. rc-switch therefore needs D2, and IR/RF
+  receivers on D3 must be polled (as `Arduino101_LaserTagIRNegativeTrigger` does).
+- **rc-switch never reports code 0:** `available()` treats 0 as "nothing received".
+- **IR "phone false triggers":** the simple IR sketches fire on any IR activity, including iPhone Face ID. Use
+  `Arduino101_LaserTagIRNegativeTrigger`, which only accepts the laser tag gun's frame format.
+- **COM port locked by a serial monitor:** uploads fail with `Serial port busy` / time out. Close the monitor before uploading.
 - **Port auto-detect:** `upload` without `-Port` only works when exactly one connected board matches the sketch's board type.
   Boards with CH340/CP210x USB bridges (most ESP boards) are not identified. Pass `-Port` for them.
 - **PowerShell 5.1 stderr:** ESP cores write size reports to stderr. `arduino.ps1` merges stderr so these aren't treated as failures. Keep that behavior if you edit `Invoke-Cli`.
@@ -270,15 +274,21 @@ Expected warning: on Arduino 101 sketches, `rc-switch` says it "may be incompati
 - Fixed an `arduino.ps1 intellisense <name>` bug: a partial refresh dropped the existing entries
   (Windows PowerShell 5.1 `ConvertFrom-Json` array handling).
 
-### 2026-10-20: RF code 0x0 trigger on D3
+### 2026-10-20: Laser tag IR trigger (Arduino101_LaserTagIRNegativeTrigger, COM7)
 
-- Converted the user-copied `Arduino101_SimpleIRNegativeTriggerCode0x0` (copy of the base IR sketch) to a **433 MHz RF**
-  receiver on D3, matching the existing board wiring. Renamed the `.ino` to match the folder (arduino-cli requirement).
-- D3 can't run rc-switch: it's an ARC GPIO with no `CHANGE` interrupt on the Curie core. The sketch polls D3 and decodes with
-  rc-switch's protocol table and rules (protocols 1-12), so the code values match. It also reports code 0, which rc-switch can't.
-- Prints every confirmed code (value, bits, protocol, pulse length) once per press. Only `TRIGGER_CODE` `0x0` pulls D4 LOW for 500 ms.
-  Noise filter: at least 12 bits and 2 identical frames.
-- Decoder logic checked with a PowerShell port and synthetic frames: `0x0` and `0x5A5A5A` (24-bit) decode, and 2,000 random noise edges give 0 decodes.
+- Goal: the relay fires only when the **Sharper Image laser tag gun** hits the KY-022 IR receiver on D3. The simple IR sketches
+  trigger on any IR, including an iPhone's Face ID/proximity IR.
+- Detour: "code 0x0" was first read as a 433 MHz RF code (RF polling decoder, commit `97ee56f`, in git history). The hardware is
+  actually IR (KY-022 + laser tag gun), so the sketch was rewritten as a polled IR decoder.
+- Captured the gun's signal: a 6 ms leader mark + 0.5 ms space, then 9 pulse-width bits (1.5 ms mark = 1, 0.5 ms mark = 0, MSB
+  first), 5 frames per shot, ~4.5 ms apart. Codes seen: `0x14F`, `0x143`, `0x14B`, `0x145`, `0x147`. The `10100` header is
+  fixed; the low bits follow the team/mode setting.
+- Sketch: triggers on any 9-bit gun frame received at least twice per shot (`GUN_FRAME_BITS`, `GUN_CODE_MASK`/`GUN_CODE_VALUE`
+  to restrict). NEC remotes are printed but ignored; unrecognized IR is reported and ignored. Same D3/D4/D5/D6 wiring as the simple sketches.
+- Bench test on the second Arduino 101 (**COM7**, serial `...61000Q4`): 10 of 10 shots triggered, and an iPhone IR burst was ignored. The user confirmed it works.
+- Renamed the user's copy `Arduino101_SimpleIRNegativeTriggerCode0x0` to `Arduino101_LaserTagIRNegativeTrigger` (git mv).
 - Fixed `Arduino101_Node`: removed the dead `received == 0x0` branch (rc-switch can't report 0), and corrected the header text and
   `components/arduino101/PINOUT.md`. Behavior is unchanged: any code pulses Relay 1 while `pulseCode` is unset.
-- Not yet uploaded or tested with a real remote.
+- `Arduino101_Node` uploaded to COM7 but produced no serial output. Likely cause: its rc-switch `CHANGE` interrupt on an unconnected
+  (floating) D2 (the boards' receiver is on D3). Not investigated further; the COM7 board now runs the laser tag sketch.
+- `arduino.ps1 intellisense <name>` now also drops entries for sketch files that no longer exist.
