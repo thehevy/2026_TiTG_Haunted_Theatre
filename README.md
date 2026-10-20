@@ -43,6 +43,9 @@ Recommended local setup:
 - `components/arduino101/Arduino101_Node/Arduino101_Node.ino`
   - Arduino 101 RF-driven relay node (pulse, lockout pulse, toggle)
   - Pinout: `components/arduino101/PINOUT.md`
+- `components/arduino101/Arduino101_TimedTriggerRelay/Arduino101_TimedTriggerRelay.ino`
+  - Arduino 101 positive (D7) / negative (D8) trigger to relay pulse, selectable 1/5/15/30/60 s via A0-A4
+  - Pinout: `components/arduino101/Arduino101_TimedTriggerRelay/PINOUT.md`
 - `components/esp01/ESP01_Node.ino`
   - ESP-01 IR-trigger relay node with 1s pulse and 15s cooldown
   - Pinout: `components/esp01/PINOUT.md`

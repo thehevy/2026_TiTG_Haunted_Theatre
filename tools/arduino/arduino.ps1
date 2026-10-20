@@ -227,7 +227,9 @@ switch ($Action) {
         $names = if (-not $Sketch -or $Sketch -eq 'all') { @($config.sketches.PSObject.Properties.Name) } else { @($Sketch) }
         $entries = @{}
         if ($names.Count -lt $config.sketches.PSObject.Properties.Name.Count -and (Test-Path $dbPath)) {
-            foreach ($e in @(Get-Content $dbPath -Raw | ConvertFrom-Json)) { $entries[$e.file] = $e }
+            # Assign first: Windows PowerShell 5.1 emits a parsed JSON array as a single pipeline object.
+            $existing = Get-Content $dbPath -Raw | ConvertFrom-Json
+            foreach ($e in $existing) { $entries[$e.file] = $e }
         }
         foreach ($name in $names) {
             $entry = Get-SketchEntry $name
