@@ -31,12 +31,17 @@ As of 2026-10-20:
   Windows 11 (unsigned catalogs). See `SETUP_GUIDE.md` > Step 4 > *Windows 11: Intel drivers rejected, use Zadig instead*.
 - VS Code C/C++ IntelliSense is configured via `.build/compile_commands.json`. That file is machine-specific; generate it with
   `.\tools\arduino\arduino.ps1 intellisense` (already generated on the setup machine).
-- On the setup machine, COM3 is Intel AMT SOL and COM4/COM5 are Bluetooth serial links. Four Arduino 101 units have been used:
-  **COM6** (serial `...610005K`), **COM7** (serial `...61000Q4`), **COM8** (serial `...61000V7`), and **COM9** (serial `...61000R4`).
-  Always confirm with `ports` after plugging in.
-- Current board loads: **COM6** = `Arduino101_LaserTagIRNegativeTrigger5s`, **COM7** = `Arduino101_LaserTagIRNegativeTrigger`
-  (bench-verified: gun shots trigger, iPhone IR ignored), **COM8** = `Arduino101_LaserTagIRNegativeTrigger60s`,
-  **COM9** = `Arduino101_LaserTagIRNegativeTrigger5s`.
+- On the setup machine, COM3 is Intel AMT SOL and COM4/COM5 are Bluetooth serial links. Always confirm board ports with
+  `ports` after plugging in; a board can get a new COM number on a different USB port, so match by serial number.
+- Arduino 101 board inventory (all running laser tag sketches, heartbeat confirmed after upload):
+
+  | Port  | Board serial  | Sketch                                     | Relay per shot | Notes                                      |
+  | ----- | ------------- | ------------------------------------------ | -------------- | ------------------------------------------ |
+  | COM6  | `...610005K`  | `Arduino101_LaserTagIRNegativeTrigger5s`   | 5 s            |                                            |
+  | COM7  | `...61000Q4`  | `Arduino101_LaserTagIRNegativeTrigger`     | 500 ms         | Bench-verified: gun triggers, iPhone ignored |
+  | COM8  | `...61000V7`  | `Arduino101_LaserTagIRNegativeTrigger60s`  | 60 s           |                                            |
+  | COM9  | `...61000R4`  | `Arduino101_LaserTagIRNegativeTrigger5s`   | 5 s            |                                            |
+  | COM10 | `...61000V8`  | `Arduino101_LaserTagIRNegativeTrigger`     | 500 ms         |                                            |
 
 ## Next Steps
 
@@ -306,3 +311,4 @@ Expected warning: on Arduino 101 sketches, `rc-switch` says it "may be incompati
 - Added `Arduino101_LaserTagIRNegativeTrigger60s`: same, with `TRIGGER_PULSE_MS = 60000` and the `(60 s)` banner/title.
   Uploaded to **COM8** (third Arduino 101, serial `...61000V7`); heartbeat confirmed.
 - Uploaded `Arduino101_LaserTagIRNegativeTrigger5s` to **COM9** (fourth Arduino 101, serial `...61000R4`); heartbeat confirmed.
+- Uploaded `Arduino101_LaserTagIRNegativeTrigger` (500 ms) to **COM10** (fifth Arduino 101, serial `...61000V8`); heartbeat confirmed.
