@@ -48,7 +48,7 @@ As of 2026-10-20:
 
 1. Install the COM7 laser tag board in the prop and test hits at real range and angles. If needed, restrict team/mode with
    `GUN_CODE_MASK`/`GUN_CODE_VALUE` (see its `PINOUT.md`). Flash the same sketch to other IR boards that should respond only to the gun.
-   For a 5-second or 60-second relay pulse, use `Arduino101_LaserTagIRNegativeTrigger5s` or `...60s`.
+   For a 5, 10, or 60-second relay pulse, use `Arduino101_LaserTagIRNegativeTrigger5s`, `...10s`, or `...60s`.
 2. Upload and bench-test `Arduino101_TimedTriggerRelay` (see its `PINOUT.md` > Validation):
    `.\tools\arduino\arduino.ps1 upload Arduino101_TimedTriggerRelay -Port COM6`.
 3. Wire and bench-test the 60 s IR negative trigger on the Arduino 101 (COM6): confirm D4 goes LOW for 60 s on an IR signal
@@ -197,6 +197,7 @@ Result of `.\tools\arduino\arduino.ps1 compile all` on 2026-10-20:
 | Arduino101_TimedTriggerRelay | `Intel:arc32:arduino_101` | 16,792 B (10%) |
 | Arduino101_LaserTagIRNegativeTrigger | `Intel:arc32:arduino_101` | 17,576 B (11%) |
 | Arduino101_LaserTagIRNegativeTrigger5s | `Intel:arc32:arduino_101` | 17,588 B (11%) |
+| Arduino101_LaserTagIRNegativeTrigger10s | `Intel:arc32:arduino_101` | 17,588 B (11%) |
 | Arduino101_LaserTagIRNegativeTrigger60s | `Intel:arc32:arduino_101` | 17,588 B (11%) |
 | UNO_Node | `arduino:avr:uno` | 10,522 B (32%) |
 | UNO_SimpleIRNegativeTrigger | `arduino:avr:uno` | 9,414 B (29%) |
@@ -314,3 +315,4 @@ Expected warning: on Arduino 101 sketches, `rc-switch` says it "may be incompati
 - Uploaded `Arduino101_LaserTagIRNegativeTrigger5s` to **COM9** (fourth Arduino 101, serial `...61000R4`); heartbeat confirmed.
 - Uploaded `Arduino101_LaserTagIRNegativeTrigger` (500 ms) to **COM10** (fifth Arduino 101, serial `...61000V8`); heartbeat confirmed.
 - Uploaded `Arduino101_LaserTagIRNegativeTrigger` (500 ms) to **COM12** (sixth Arduino 101, serial `...61000LS`); heartbeat confirmed.
+- Added `Arduino101_LaserTagIRNegativeTrigger10s`: same decoder, `TRIGGER_PULSE_MS = 10000`, `(10 s)` banner/title. Compiles; not yet uploaded.

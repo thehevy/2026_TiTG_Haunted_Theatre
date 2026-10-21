@@ -67,6 +67,7 @@
         "Arduino101_TimedTriggerRelay",
         "Arduino101_LaserTagIRNegativeTrigger",
         "Arduino101_LaserTagIRNegativeTrigger5s",
+        "Arduino101_LaserTagIRNegativeTrigger10s",
         "Arduino101_LaserTagIRNegativeTrigger60s",
         "HauntedHouseRF",
         "UNO_Node",

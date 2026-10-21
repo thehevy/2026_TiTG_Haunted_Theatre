@@ -47,6 +47,7 @@ Recommended local setup:
   - Arduino 101 IR relay trigger that fires only on Sharper Image laser tag gun shots (ignores phones and TV remotes)
   - Pinout: `components/arduino101/Arduino101_LaserTagIRNegativeTrigger/PINOUT.md`
   - 5-second variant: `components/arduino101/Arduino101_LaserTagIRNegativeTrigger5s/`
+  - 10-second variant: `components/arduino101/Arduino101_LaserTagIRNegativeTrigger10s/`
   - 60-second variant: `components/arduino101/Arduino101_LaserTagIRNegativeTrigger60s/`
 - `components/arduino101/Arduino101_TimedTriggerRelay/Arduino101_TimedTriggerRelay.ino`
   - Arduino 101 positive (D7) / negative (D8) trigger to relay pulse, selectable 1/5/15/30/60 s via A0-A4
