@@ -202,6 +202,7 @@ Result of `.\tools\arduino\arduino.ps1 compile all` on 2026-10-20:
 | Arduino101_LaserTagIRNegativeTrigger60s | `Intel:arc32:arduino_101` | 17,588 B (11%) |
 | UNO_Node | `arduino:avr:uno` | 10,522 B (32%) |
 | UNO_SimpleIRNegativeTrigger | `arduino:avr:uno` | 9,414 B (29%) |
+| UNO_LaserTagIRNegativeTrigger | `arduino:avr:uno` | 5,106 B (15%), RAM 628 B (30%) |
 | Nano_Node | `arduino:avr:nano:cpu=atmega328` | 10,226 B (33%) |
 | ESP32_Node | `esp32:esp32:esp32` | 957,243 B (73%) |
 | ESP32_SmartTracking_Node | `esp32:esp32:esp32` | 309,263 B (23%) |
@@ -318,3 +319,11 @@ Expected warning: on Arduino 101 sketches, `rc-switch` says it "may be incompati
 - Uploaded `Arduino101_LaserTagIRNegativeTrigger` (500 ms) to **COM12** (sixth Arduino 101, serial `...61000LS`); heartbeat confirmed.
 - Added `Arduino101_LaserTagIRNegativeTrigger10s`: same decoder, `TRIGGER_PULSE_MS = 10000`, `(10 s)` banner/title.
   Uploaded to **COM13** (seventh Arduino 101, serial `...61000GH`); heartbeat confirmed.
+
+### 2026-10-20: UNO R3 laser tag port
+
+- Added `components/uno/UNO_LaserTagIRNegativeTrigger` (500 ms): the same polled laser tag decoder as the Arduino 101 sketch,
+  with UNO wiring matching `UNO_SimpleIRNegativeTrigger`: IR on D2 (receiver at 5 V), relay on D8, LEDs on D5/D6.
+- The relay output is driven directly (HIGH = off, LOW = on) because the UNO is 5 V. D8 is set HIGH before it becomes an
+  output, so the relay never blips at boot. No IRremote dependency.
+- Compiles clean with `--warnings all` (5,106 B flash, 628 B RAM). Not yet uploaded or tested on UNO hardware.

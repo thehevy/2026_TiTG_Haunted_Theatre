@@ -72,6 +72,7 @@
         "HauntedHouseRF",
         "UNO_Node",
         "UNO_SimpleIRNegativeTrigger",
+        "UNO_LaserTagIRNegativeTrigger",
         "Nano_Node",
         "ESP32_Node",
         "ESP32_SmartTracking_Node",

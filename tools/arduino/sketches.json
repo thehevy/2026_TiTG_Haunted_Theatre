@@ -30,6 +30,7 @@
     "Arduino101_LaserTagIRNegativeTrigger60s": { "path": "components/arduino101/Arduino101_LaserTagIRNegativeTrigger60s", "fqbn": "Intel:arc32:arduino_101" },
     "UNO_Node": { "path": "components/uno/UNO_Node", "fqbn": "arduino:avr:uno" },
     "UNO_SimpleIRNegativeTrigger": { "path": "components/uno/UNO_SimpleIRNegativeTrigger", "fqbn": "arduino:avr:uno" },
+    "UNO_LaserTagIRNegativeTrigger": { "path": "components/uno/UNO_LaserTagIRNegativeTrigger", "fqbn": "arduino:avr:uno" },
     "Nano_Node": { "path": "components/nano/Nano_Node", "fqbn": "arduino:avr:nano:cpu=atmega328" },
     "ESP32_Node": { "path": "components/esp32/ESP32_Node", "fqbn": "esp32:esp32:esp32" },
     "ESP32_SmartTracking_Node": { "path": "components/esp32/ESP32_SmartTracking_Node", "fqbn": "esp32:esp32:esp32" },
