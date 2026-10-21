@@ -46,6 +46,7 @@ As of 2026-10-20:
   | COM13 | `...61000GH`  | `Arduino101_LaserTagIRNegativeTrigger10s`  | 10 s           |                                            |
   | COM14 | `...18204`    | `UNO_LaserTagIRNegativeTrigger`            | 500 ms         | **UNO R3 clone** (USB VID 3343 PID 0043; arduino-cli shows "Unknown") |
   | COM15 | CH340         | `Nano_LaserTagIRNegativeTrigger`           | 500 ms         | **Nano clone** (CH340); **new** bootloader (`cpu=atmega328`) |
+  | COM16 | `...6100019`  | `Arduino101_LaserTagIRNegativeTrigger5s`   | 5 s            |                                            |
 
 ## Next Steps
 
