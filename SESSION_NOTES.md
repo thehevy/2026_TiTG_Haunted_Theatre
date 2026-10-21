@@ -33,7 +33,7 @@ As of 2026-10-20:
   `.\tools\arduino\arduino.ps1 intellisense` (already generated on the setup machine).
 - On the setup machine, COM3 is Intel AMT SOL and COM4/COM5 are Bluetooth serial links. Always confirm board ports with
   `ports` after plugging in; a board can get a new COM number on a different USB port, so match by serial number.
-- Arduino 101 board inventory (all running laser tag sketches, heartbeat confirmed after upload):
+- Board inventory (all running laser tag sketches, heartbeat confirmed after upload). Arduino 101 boards unless noted:
 
   | Port  | Board serial  | Sketch                                     | Relay per shot | Notes                                      |
   | ----- | ------------- | ------------------------------------------ | -------------- | ------------------------------------------ |
@@ -44,6 +44,7 @@ As of 2026-10-20:
   | COM10 | `...61000V8`  | `Arduino101_LaserTagIRNegativeTrigger`     | 500 ms         |                                            |
   | COM12 | `...61000LS`  | `Arduino101_LaserTagIRNegativeTrigger`     | 500 ms         |                                            |
   | COM13 | `...61000GH`  | `Arduino101_LaserTagIRNegativeTrigger10s`  | 10 s           |                                            |
+  | COM14 | `...18204`    | `UNO_LaserTagIRNegativeTrigger`            | 500 ms         | **UNO R3 clone** (USB VID 3343 PID 0043; arduino-cli shows "Unknown") |
 
 ## Next Steps
 
@@ -326,4 +327,6 @@ Expected warning: on Arduino 101 sketches, `rc-switch` says it "may be incompati
   with UNO wiring matching `UNO_SimpleIRNegativeTrigger`: IR on D2 (receiver at 5 V), relay on D8, LEDs on D5/D6.
 - The relay output is driven directly (HIGH = off, LOW = on) because the UNO is 5 V. D8 is set HIGH before it becomes an
   output, so the relay never blips at boot. No IRremote dependency.
-- Compiles clean with `--warnings all` (5,106 B flash, 628 B RAM). Not yet uploaded or tested on UNO hardware.
+- Compiles clean with `--warnings all` (5,106 B flash, 628 B RAM).
+- Uploaded to **COM14**, an UNO R3 clone (USB VID 3343 / PID 0043, serial `...18204`). The upload worked with `arduino:avr:uno`
+  even though arduino-cli lists the board as "Unknown". Startup banner and heartbeat confirmed; gun shots not yet tested on the UNO.
