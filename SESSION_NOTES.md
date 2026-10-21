@@ -47,6 +47,7 @@ As of 2026-10-20:
   | COM14 | `...18204`    | `UNO_LaserTagIRNegativeTrigger`            | 500 ms         | **UNO R3 clone** (USB VID 3343 PID 0043; arduino-cli shows "Unknown") |
   | COM15 | CH340         | `Nano_LaserTagIRNegativeTrigger`           | 500 ms         | **Nano clone(s)** (CH340, new bootloader). CH340 has no serial number, so COM15 = that USB socket; uploaded twice on 2026-10-20 (possibly two Nanos) |
   | COM16 | `...6100019`  | `Arduino101_LaserTagIRNegativeTrigger5s`   | 5 s            |                                            |
+  | COM17 | `...61000QP`  | `Arduino101_LaserTagIRNegativeTrigger`     | 500 ms         | BLE firmware updated during first upload   |
 
 ## Next Steps
 
