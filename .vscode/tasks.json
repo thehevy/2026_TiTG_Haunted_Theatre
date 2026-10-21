@@ -74,6 +74,7 @@
         "UNO_SimpleIRNegativeTrigger",
         "UNO_LaserTagIRNegativeTrigger",
         "Nano_Node",
+        "Nano_LaserTagIRNegativeTrigger",
         "ESP32_Node",
         "ESP32_SmartTracking_Node",
         "ESP32S3_SmartTracking_Node",

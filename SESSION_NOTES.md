@@ -204,6 +204,7 @@ Result of `.\tools\arduino\arduino.ps1 compile all` on 2026-10-20:
 | UNO_Node | `arduino:avr:uno` | 10,522 B (32%) |
 | UNO_SimpleIRNegativeTrigger | `arduino:avr:uno` | 9,414 B (29%) |
 | UNO_LaserTagIRNegativeTrigger | `arduino:avr:uno` | 5,106 B (15%), RAM 628 B (30%) |
+| Nano_LaserTagIRNegativeTrigger | `arduino:avr:nano:cpu=atmega328old` | 4,986 B (16%), RAM 623 B (30%) |
 | Nano_Node | `arduino:avr:nano:cpu=atmega328` | 10,226 B (33%) |
 | ESP32_Node | `esp32:esp32:esp32` | 957,243 B (73%) |
 | ESP32_SmartTracking_Node | `esp32:esp32:esp32` | 309,263 B (23%) |
@@ -330,3 +331,11 @@ Expected warning: on Arduino 101 sketches, `rc-switch` says it "may be incompati
 - Compiles clean with `--warnings all` (5,106 B flash, 628 B RAM).
 - Uploaded to **COM14**, an UNO R3 clone (USB VID 3343 / PID 0043, serial `...18204`). The upload worked with `arduino:avr:uno`
   even though arduino-cli lists the board as "Unknown". Startup banner and heartbeat confirmed; gun shots not yet tested on the UNO.
+
+### 2026-10-20: Nano laser tag port
+
+- Added `components/nano/Nano_LaserTagIRNegativeTrigger` (500 ms): same decoder as the UNO port. Pins follow `Nano_Node`
+  (user choice): IR on D2, relay on D4 (Nano_Node Relay 1). D5/D6 are left untouched, so a Nano_Node 3-channel relay board is
+  safe. The onboard D13 LED shows relay status; there are no external status LEDs.
+- FQBN `arduino:avr:nano:cpu=atmega328old` (the user's Nanos have the old bootloader). Compiles clean with `--warnings all`
+  (4,986 B flash, 623 B RAM). Not yet uploaded.
