@@ -15,8 +15,11 @@ sketches). The pins follow `Nano_Node`: IR on D2, relay on D4 (`Nano_Node` Relay
 
 ## Board Setup
 
-- Arduino board target: `Arduino Nano`, Processor **ATmega328P (Old Bootloader)** (`arduino:avr:nano:cpu=atmega328old`); Arduino IDE 2.x or arduino-cli
-- If an upload fails with `not in sync` or `programmer is not responding`, the board may have the new bootloader instead. Retry with `-Fqbn arduino:avr:nano:cpu=atmega328`.
+- Arduino board target: `Arduino Nano`, Processor **ATmega328P** (`arduino:avr:nano:cpu=atmega328`, new bootloader); Arduino IDE 2.x or arduino-cli
+- Old-bootloader Nanos: if an upload fails with `not in sync`, pass `-Fqbn arduino:avr:nano:cpu=atmega328old`. The bench Nano
+  (CH340, COM15) turned out to have the **new** bootloader even though the old one was expected, so check each board.
+- If an upload hangs instead of failing, or later uploads report the port busy or `Access denied`, a stuck `avrdude` is holding the
+  port. Unplug and replug the Nano to release it.
 - Port: confirm with `.\tools\arduino\arduino.ps1 ports`. CH340-based clones show as "USB-SERIAL CH340" and are not auto-identified, so always pass `-Port`.
 - Serial Monitor: `115200` baud
 - No external libraries. IRremote has no decoder for this gun's format, so the sketch times the receiver output itself.
@@ -186,4 +189,5 @@ flowchart LR
 5. Hold a phone near the receiver and unlock it with Face ID. Confirm `IR ignored: unrecognized signal` (or nothing) and that the relay stays off.
 6. Power-cycle the board. Confirm the relay does not click on during boot.
 
-The decoder was bench-verified on the Arduino 101 version (10 of 10 shots triggered, iPhone IR ignored). It has not yet been tested on Nano hardware.
+The decoder was bench-verified on the Arduino 101 version (10 of 10 shots triggered, iPhone IR ignored). On the Nano (COM15,
+CH340 clone, new bootloader) the sketch uploaded and its startup banner and heartbeat were confirmed on 2026-10-20.

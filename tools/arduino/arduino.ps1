@@ -218,6 +218,9 @@ switch ($Action) {
         elseif ($entry.Fqbn -eq 'esp8266:esp8266:generic') {
             Write-Host 'ESP-01: GPIO0 must be held LOW at reset to enter flash mode.' -ForegroundColor Yellow
         }
+        elseif ($entry.Fqbn -like 'arduino:avr:nano:*') {
+            Write-Host 'Nano: "not in sync" usually means the other bootloader; retry with -Fqbn arduino:avr:nano:cpu=atmega328old (or atmega328). If the upload hangs, unplug/replug the Nano.' -ForegroundColor Yellow
+        }
         Write-Host "=== Uploading $($entry.Name) [$($entry.Fqbn)] to $Port" -ForegroundColor Cyan
         Invoke-Cli @('compile', '--fqbn', $entry.Fqbn, '--upload', '--port', $Port, $entry.Path)
     }

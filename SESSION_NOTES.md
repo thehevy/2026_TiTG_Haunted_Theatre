@@ -45,6 +45,7 @@ As of 2026-10-20:
   | COM12 | `...61000LS`  | `Arduino101_LaserTagIRNegativeTrigger`     | 500 ms         |                                            |
   | COM13 | `...61000GH`  | `Arduino101_LaserTagIRNegativeTrigger10s`  | 10 s           |                                            |
   | COM14 | `...18204`    | `UNO_LaserTagIRNegativeTrigger`            | 500 ms         | **UNO R3 clone** (USB VID 3343 PID 0043; arduino-cli shows "Unknown") |
+  | COM15 | CH340         | `Nano_LaserTagIRNegativeTrigger`           | 500 ms         | **Nano clone** (CH340); **new** bootloader (`cpu=atmega328`) |
 
 ## Next Steps
 
@@ -204,7 +205,7 @@ Result of `.\tools\arduino\arduino.ps1 compile all` on 2026-10-20:
 | UNO_Node | `arduino:avr:uno` | 10,522 B (32%) |
 | UNO_SimpleIRNegativeTrigger | `arduino:avr:uno` | 9,414 B (29%) |
 | UNO_LaserTagIRNegativeTrigger | `arduino:avr:uno` | 5,106 B (15%), RAM 628 B (30%) |
-| Nano_LaserTagIRNegativeTrigger | `arduino:avr:nano:cpu=atmega328old` | 4,986 B (16%), RAM 623 B (30%) |
+| Nano_LaserTagIRNegativeTrigger | `arduino:avr:nano:cpu=atmega328` | 4,986 B (16%), RAM 623 B (30%) |
 | Nano_Node | `arduino:avr:nano:cpu=atmega328` | 10,226 B (33%) |
 | ESP32_Node | `esp32:esp32:esp32` | 957,243 B (73%) |
 | ESP32_SmartTracking_Node | `esp32:esp32:esp32` | 309,263 B (23%) |
@@ -231,6 +232,8 @@ Expected warning: on Arduino 101 sketches, `rc-switch` says it "may be incompati
 - **IR "phone false triggers":** the simple IR sketches fire on any IR activity, including iPhone Face ID. Use
   `Arduino101_LaserTagIRNegativeTrigger`, which only accepts the laser tag gun's frame format.
 - **COM port locked by a serial monitor:** uploads fail with `Serial port busy` / time out. Close the monitor before uploading.
+- **Nano (CH340) upload hangs / port stays locked:** a stuck `avrdude` can't be killed while blocked in the CH340 driver.
+  Unplug and replug the Nano. Bootloaders vary per clone; the default is `cpu=atmega328` (new), so use `-Fqbn ...:cpu=atmega328old` for old ones.
 - **Port auto-detect:** `upload` without `-Port` only works when exactly one connected board matches the sketch's board type.
   Boards with CH340/CP210x USB bridges (most ESP boards) are not identified. Pass `-Port` for them.
 - **PowerShell 5.1 stderr:** ESP cores write size reports to stderr. `arduino.ps1` merges stderr so these aren't treated as failures. Keep that behavior if you edit `Invoke-Cli`.
@@ -337,5 +340,9 @@ Expected warning: on Arduino 101 sketches, `rc-switch` says it "may be incompati
 - Added `components/nano/Nano_LaserTagIRNegativeTrigger` (500 ms): same decoder as the UNO port. Pins follow `Nano_Node`
   (user choice): IR on D2, relay on D4 (Nano_Node Relay 1). D5/D6 are left untouched, so a Nano_Node 3-channel relay board is
   safe. The onboard D13 LED shows relay status; there are no external status LEDs.
-- FQBN `arduino:avr:nano:cpu=atmega328old` (the user's Nanos have the old bootloader). Compiles clean with `--warnings all`
-  (4,986 B flash, 623 B RAM). Not yet uploaded.
+- FQBN was first set to `arduino:avr:nano:cpu=atmega328old` (the user expected the old bootloader).
+- Uploaded to **COM15** (CH340 Nano clone). The old-bootloader upload failed (`not in sync: resp=0x8c`); the new-bootloader
+  `cpu=atmega328` upload succeeded, and the banner and heartbeat were confirmed. The default FQBN is now `cpu=atmega328`.
+- An old-bootloader retry hung and left an orphaned `avrdude` that `Stop-Process -Force` could not kill (blocked in the CH340
+  driver), locking COM15. Unplugging and replugging the Nano released it. A brief automatic bootloader-fallback in `arduino.ps1`
+  was removed because the failing attempt can hang instead of failing. `upload` now prints a Nano bootloader/replug hint instead.
