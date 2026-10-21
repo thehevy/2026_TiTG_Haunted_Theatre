@@ -43,6 +43,7 @@ As of 2026-10-20:
   | COM9  | `...61000R4`  | `Arduino101_LaserTagIRNegativeTrigger5s`   | 5 s            |                                            |
   | COM10 | `...61000V8`  | `Arduino101_LaserTagIRNegativeTrigger`     | 500 ms         |                                            |
   | COM12 | `...61000LS`  | `Arduino101_LaserTagIRNegativeTrigger`     | 500 ms         |                                            |
+  | COM13 | `...61000GH`  | `Arduino101_LaserTagIRNegativeTrigger10s`  | 10 s           |                                            |
 
 ## Next Steps
 
@@ -315,4 +316,5 @@ Expected warning: on Arduino 101 sketches, `rc-switch` says it "may be incompati
 - Uploaded `Arduino101_LaserTagIRNegativeTrigger5s` to **COM9** (fourth Arduino 101, serial `...61000R4`); heartbeat confirmed.
 - Uploaded `Arduino101_LaserTagIRNegativeTrigger` (500 ms) to **COM10** (fifth Arduino 101, serial `...61000V8`); heartbeat confirmed.
 - Uploaded `Arduino101_LaserTagIRNegativeTrigger` (500 ms) to **COM12** (sixth Arduino 101, serial `...61000LS`); heartbeat confirmed.
-- Added `Arduino101_LaserTagIRNegativeTrigger10s`: same decoder, `TRIGGER_PULSE_MS = 10000`, `(10 s)` banner/title. Compiles; not yet uploaded.
+- Added `Arduino101_LaserTagIRNegativeTrigger10s`: same decoder, `TRIGGER_PULSE_MS = 10000`, `(10 s)` banner/title.
+  Uploaded to **COM13** (seventh Arduino 101, serial `...61000GH`); heartbeat confirmed.
