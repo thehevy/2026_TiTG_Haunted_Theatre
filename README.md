@@ -49,6 +49,7 @@ Recommended local setup:
   - 5-second variant: `components/arduino101/Arduino101_LaserTagIRNegativeTrigger5s/`
   - 10-second variant: `components/arduino101/Arduino101_LaserTagIRNegativeTrigger10s/`
   - 60-second variant: `components/arduino101/Arduino101_LaserTagIRNegativeTrigger60s/`
+  - Dual-output variant (D4 LOW + D5 HIGH, 500 ms): `components/arduino101/Arduino101_LaserTagIRDualTrigger/`
 - `components/arduino101/Arduino101_TimedTriggerRelay/Arduino101_TimedTriggerRelay.ino`
   - Arduino 101 positive (D7) / negative (D8) trigger to relay pulse, selectable 1/5/15/30/60 s via A0-A4
   - Pinout: `components/arduino101/Arduino101_TimedTriggerRelay/PINOUT.md`

@@ -205,6 +205,7 @@ Result of `.\tools\arduino\arduino.ps1 compile all` on 2026-10-20:
 | Arduino101_LaserTagIRNegativeTrigger | `Intel:arc32:arduino_101` | 17,576 B (11%) |
 | Arduino101_LaserTagIRNegativeTrigger5s | `Intel:arc32:arduino_101` | 17,588 B (11%) |
 | Arduino101_LaserTagIRNegativeTrigger10s | `Intel:arc32:arduino_101` | 17,588 B (11%) |
+| Arduino101_LaserTagIRDualTrigger | `Intel:arc32:arduino_101` | 17,684 B (11%) |
 | Arduino101_LaserTagIRNegativeTrigger60s | `Intel:arc32:arduino_101` | 17,588 B (11%) |
 | UNO_Node | `arduino:avr:uno` | 10,522 B (32%) |
 | UNO_SimpleIRNegativeTrigger | `arduino:avr:uno` | 9,414 B (29%) |
@@ -350,3 +351,12 @@ Expected warning: on Arduino 101 sketches, `rc-switch` says it "may be incompati
 - An old-bootloader retry hung and left an orphaned `avrdude` that `Stop-Process -Force` could not kill (blocked in the CH340
   driver), locking COM15. Unplugging and replugging the Nano released it. A brief automatic bootloader-fallback in `arduino.ps1`
   was removed because the failing attempt can hang instead of failing. `upload` now prints a Nano bootloader/replug hint instead.
+
+### 2026-10-21: Laser tag dual-trigger variant
+
+- Added `Arduino101_LaserTagIRDualTrigger`: the 500 ms laser tag sketch with an added **positive trigger output on D5**
+  (HIGH 3.3 V while triggered, LOW idle) alongside the existing negative D4 output (LOW while triggered, high-Z idle). Both
+  share `TRIGGER_PULSE_MS`. The IR activity LED moved D5 -> D7; the relay LED stays on D6.
+- D5 is a 3.3 V logic signal only: drive a 3.3 V-compatible active-HIGH relay, a logic-level MOSFET, or a prop input.
+  Optional 10 kOhm pull-down on D5 for a glitch-free boot.
+- Compiles clean with `--warnings all` (17,684 B). Not yet uploaded.
