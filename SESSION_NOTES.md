@@ -48,6 +48,7 @@ As of 2026-10-20:
   | COM15 | CH340         | `Nano_LaserTagIRNegativeTrigger`           | 500 ms         | **Nano clone(s)** (CH340, new bootloader). CH340 has no serial number, so COM15 = that USB socket; uploaded twice on 2026-10-20 (possibly two Nanos) |
   | COM16 | `...6100019`  | `Arduino101_LaserTagIRNegativeTrigger5s`   | 5 s            |                                            |
   | COM17 | `...61000QP`  | `Arduino101_LaserTagIRNegativeTrigger`     | 500 ms         | BLE firmware updated during first upload   |
+  | COM18 | `...61000RS`  | `Arduino101_LaserTagIRNegativeTrigger`     | 500 ms         | Upload + BLE update succeeded 2026-10-21; stuck in DFU afterwards, heartbeat **not yet verified** |
 
 ## Next Steps
 
