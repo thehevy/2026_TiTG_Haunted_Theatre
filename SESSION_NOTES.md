@@ -362,3 +362,13 @@ Expected warning: on Arduino 101 sketches, `rc-switch` says it "may be incompati
 - Compiles clean with `--warnings all` (17,684 B). Upload to COM19 (`...6100017`) was attempted twice on 2026-10-21 but failed
   before flashing with `Serial port busy` (port held, likely by a serial monitor); the user unplugged the board and deferred the
   upload. **COM19 still runs `Arduino101_LaserTagIRNegativeTrigger` (500 ms).**
+
+### 2026-10-21: WeMos D1 R32 upload on COM15 blocked (CH340)
+
+- Tried `WemosD1R32_SimpleIRPositiveTrigger` (`esp32:esp32:esp32`) on **COM15** (CH340, VID 1A86 PID 7523). The sketch compiles
+  (292,667 B); the upload fails before connecting: `PermissionError(13, 'A device attached to the system is not functioning')`.
+- Windows reports the device "working properly", but the port can't be opened at any baud rate (9600-921600). Not fixed by
+  replugging, disconnecting the board wiring, or `pnputil /restart-device` (elevated). CH340 driver is 3.9.2024.9, the same one
+  that worked for the Nano on COM15.
+- Next to try: a different USB port (direct, not a hub), a different **data** cable, then another PC. If those fail, suspect the
+  board's CH340 chip, or try an older WCH CH340 driver (3.5/3.8).
