@@ -359,4 +359,6 @@ Expected warning: on Arduino 101 sketches, `rc-switch` says it "may be incompati
   share `TRIGGER_PULSE_MS`. The IR activity LED moved D5 -> D7; the relay LED stays on D6.
 - D5 is a 3.3 V logic signal only: drive a 3.3 V-compatible active-HIGH relay, a logic-level MOSFET, or a prop input.
   Optional 10 kOhm pull-down on D5 for a glitch-free boot.
-- Compiles clean with `--warnings all` (17,684 B). Not yet uploaded.
+- Compiles clean with `--warnings all` (17,684 B). Upload to COM19 (`...6100017`) was attempted twice on 2026-10-21 but failed
+  before flashing with `Serial port busy` (port held, likely by a serial monitor); the user unplugged the board and deferred the
+  upload. **COM19 still runs `Arduino101_LaserTagIRNegativeTrigger` (500 ms).**
