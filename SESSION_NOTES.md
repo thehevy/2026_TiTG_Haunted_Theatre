@@ -51,6 +51,7 @@ As of 2026-10-20:
   | COM18 | `...61000RS`  | `Arduino101_LaserTagIRNegativeTrigger`     | 500 ms         | Upload + BLE update succeeded 2026-10-21; stuck in DFU afterwards, heartbeat **not yet verified** |
   | COM19 | `...6100017`  | `Arduino101_LaserTagIRNegativeTrigger`     | 500 ms         | BLE firmware updated during first upload   |
   | COM22 | `...61000V9`  | `Arduino101_LaserTagIRDualTrigger`         | 500 ms         | D4 LOW + D5 HIGH; BLE updated on first upload |
+  | COM23 | `...61000HZ`  | `Arduino101_LaserTagIRDualTrigger`         | 500 ms         | D4 LOW + D5 HIGH; BLE updated on first upload |
 
 ## Next Steps
 
