@@ -74,6 +74,7 @@
         "UNO_Node",
         "UNO_SimpleIRNegativeTrigger",
         "UNO_LaserTagIRNegativeTrigger",
+        "UNO_LaserTagIRDualTrigger",
         "Nano_Node",
         "Nano_LaserTagIRNegativeTrigger",
         "ESP32_Node",

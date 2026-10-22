@@ -68,6 +68,7 @@ Recommended local setup:
 - `components/uno/UNO_LaserTagIRNegativeTrigger/UNO_LaserTagIRNegativeTrigger.ino`
   - UNO R3 port of the laser tag IR trigger (500 ms; gun shots only, ignores phones and TV remotes)
   - Pinout: `components/uno/UNO_LaserTagIRNegativeTrigger/PINOUT.md`
+  - Dual-output variant (D8 LOW + D5 HIGH at 5 V, 500 ms): `components/uno/UNO_LaserTagIRDualTrigger/`
 - `components/nano/Nano_LaserTagIRNegativeTrigger/Nano_LaserTagIRNegativeTrigger.ino`
   - Arduino Nano port of the laser tag IR trigger (500 ms; IR D2, relay D4 like `Nano_Node`)
   - Pinout: `components/nano/Nano_LaserTagIRNegativeTrigger/PINOUT.md`

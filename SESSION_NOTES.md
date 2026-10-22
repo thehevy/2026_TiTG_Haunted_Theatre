@@ -50,6 +50,7 @@ As of 2026-10-20:
   | COM17 | `...61000QP`  | `Arduino101_LaserTagIRNegativeTrigger`     | 500 ms         | BLE firmware updated during first upload   |
   | COM18 | `...61000RS`  | `Arduino101_LaserTagIRNegativeTrigger`     | 500 ms         | Upload + BLE update succeeded 2026-10-21; stuck in DFU afterwards, heartbeat **not yet verified** |
   | COM19 | `...6100017`  | `Arduino101_LaserTagIRNegativeTrigger`     | 500 ms         | BLE firmware updated during first upload   |
+  | COM22 | `...61000V9`  | `Arduino101_LaserTagIRDualTrigger`         | 500 ms         | D4 LOW + D5 HIGH; BLE updated on first upload |
 
 ## Next Steps
 
@@ -210,6 +211,7 @@ Result of `.\tools\arduino\arduino.ps1 compile all` on 2026-10-20:
 | UNO_Node | `arduino:avr:uno` | 10,522 B (32%) |
 | UNO_SimpleIRNegativeTrigger | `arduino:avr:uno` | 9,414 B (29%) |
 | UNO_LaserTagIRNegativeTrigger | `arduino:avr:uno` | 5,106 B (15%), RAM 628 B (30%) |
+| UNO_LaserTagIRDualTrigger | `arduino:avr:uno` | 5,182 B (16%), RAM 628 B (30%) |
 | Nano_LaserTagIRNegativeTrigger | `arduino:avr:nano:cpu=atmega328` | 4,986 B (16%), RAM 623 B (30%) |
 | Nano_Node | `arduino:avr:nano:cpu=atmega328` | 10,226 B (33%) |
 | ESP32_Node | `esp32:esp32:esp32` | 957,243 B (73%) |
@@ -376,3 +378,12 @@ Expected warning: on Arduino 101 sketches, `rc-switch` says it "may be incompati
   PC socket is ruled out. The Nano's CH340 works with the same driver, so the fault is this WeMos's CH340 or its cable. A likely cause is a
   counterfeit CH340 rejected by WCH driver 3.8/3.9 (fix: roll back to driver 3.5, which affects all CH340 devices on the PC).
   The user stopped here. Next: swap the cable, then try another PC or a driver rollback.
+
+### 2026-10-21: Dual trigger uploads (COM21 UNO, COM22 Arduino 101)
+
+- **COM22** (Arduino 101 `...61000V9`): `Arduino101_LaserTagIRDualTrigger` uploaded (BLE firmware also flashed). Heartbeat confirms
+  negative D4 + positive D5. This is the first board running the dual trigger.
+- **COM21** turned out to be an **Elegoo UNO R3** (USB `2341:0043`), not an Arduino 101. Created `components/uno/UNO_LaserTagIRDualTrigger`
+  (UNO laser tag sketch plus positive D5 output at 5 V; IR LED moved D5 -> D7; negative stays on D8). Compiles (5,182 B).
+- The COM21 upload failed: `not in sync: resp=0x00`, no serial output, and the "L" LED does not flicker on RESET. The ATmega328P (socketed
+  DIP) is not running its bootloader. Next: reseat or check the chip and anything on D0/D1, reburn the bootloader (Arduino as ISP), or replace the chip.
