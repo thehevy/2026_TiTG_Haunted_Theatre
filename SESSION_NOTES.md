@@ -372,3 +372,7 @@ Expected warning: on Arduino 101 sketches, `rc-switch` says it "may be incompati
   that worked for the Nano on COM15.
 - Next to try: a different USB port (direct, not a hub), a different **data** cable, then another PC. If those fail, suspect the
   board's CH340 chip, or try an older WCH CH340 driver (3.5/3.8).
+- Retried later: moved to another USB socket (**COM20**, instance `...&0&5`). Same `device not functioning` open failure, so the
+  PC socket is ruled out. The Nano's CH340 works with the same driver, so the fault is this WeMos's CH340 or its cable. A likely cause is a
+  counterfeit CH340 rejected by WCH driver 3.8/3.9 (fix: roll back to driver 3.5, which affects all CH340 devices on the PC).
+  The user stopped here. Next: swap the cable, then try another PC or a driver rollback.
