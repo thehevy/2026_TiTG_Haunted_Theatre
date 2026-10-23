@@ -37,6 +37,7 @@
     "UNO_LaserTagIRDualTrigger": { "path": "components/uno/UNO_LaserTagIRDualTrigger", "fqbn": "arduino:avr:uno" },
     "Nano_Node": { "path": "components/nano/Nano_Node", "fqbn": "arduino:avr:nano:cpu=atmega328" },
     "Nano_LaserTagIRNegativeTrigger": { "path": "components/nano/Nano_LaserTagIRNegativeTrigger", "fqbn": "arduino:avr:nano:cpu=atmega328" },
+    "Nano_LaserTagIRNegativeTrigger5s": { "path": "components/nano/Nano_LaserTagIRNegativeTrigger5s", "fqbn": "arduino:avr:nano:cpu=atmega328" },
     "ESP32_Node": { "path": "components/esp32/ESP32_Node", "fqbn": "esp32:esp32:esp32" },
     "ESP32_SmartTracking_Node": { "path": "components/esp32/ESP32_SmartTracking_Node", "fqbn": "esp32:esp32:esp32" },
     "ESP32S3_SmartTracking_Node": { "path": "components/esp32/ESP32S3_SmartTracking_Node", "fqbn": "esp32:esp32:esp32s3" },

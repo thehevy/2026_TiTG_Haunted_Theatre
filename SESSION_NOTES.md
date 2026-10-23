@@ -45,7 +45,7 @@ As of 2026-10-20:
   | COM12 | `...61000LS`  | `Arduino101_LaserTagIRNegativeTrigger`     | 500 ms         |                                            |
   | COM13 | `...61000GH`  | `Arduino101_LaserTagIRNegativeTrigger`     | 500 ms         | Was 10 s; reflashed to 500 ms 2026-10-20  |
   | COM14 | `...18204`    | `UNO_LaserTagIRNegativeTrigger`            | 500 ms         | **UNO R3 clone** (USB VID 3343 PID 0043; arduino-cli shows "Unknown") |
-  | COM15 | CH340         | `Nano_LaserTagIRNegativeTrigger`           | 500 ms         | **Nano clone(s)** (CH340, new bootloader). CH340 has no serial number, so COM15 = that USB socket; uploaded twice on 2026-10-20 (possibly two Nanos) |
+  | COM15 | CH340         | `Nano_LaserTagIRNegativeTrigger` / `...5s` | 500 ms / 5 s   | **Nano clone(s)** (CH340, new bootloader). CH340 has no serial number, so COM15 = that USB socket. 500 ms uploaded twice 2026-10-20; **5 s** uploaded 2026-10-23 (most recent Nano in that socket) |
   | COM16 | `...6100019`  | `Arduino101_LaserTagIRNegativeTrigger5s`   | 5 s            |                                            |
   | COM17 | `...61000QP`  | `Arduino101_LaserTagIRNegativeTrigger`     | 500 ms         | BLE firmware updated during first upload   |
   | COM18 | `...61000RS`  | `Arduino101_LaserTagIRNegativeTrigger`     | 500 ms         | Upload + BLE update succeeded 2026-10-21; stuck in DFU afterwards, heartbeat **not yet verified** |
@@ -214,6 +214,7 @@ Result of `.\tools\arduino\arduino.ps1 compile all` on 2026-10-20:
 | UNO_LaserTagIRNegativeTrigger | `arduino:avr:uno` | 5,106 B (15%), RAM 628 B (30%) |
 | UNO_LaserTagIRDualTrigger | `arduino:avr:uno` | 5,182 B (16%), RAM 628 B (30%) |
 | Nano_LaserTagIRNegativeTrigger | `arduino:avr:nano:cpu=atmega328` | 4,986 B (16%), RAM 623 B (30%) |
+| Nano_LaserTagIRNegativeTrigger5s | `arduino:avr:nano:cpu=atmega328` | 4,986 B (16%), RAM 623 B (30%) |
 | Nano_Node | `arduino:avr:nano:cpu=atmega328` | 10,226 B (33%) |
 | ESP32_Node | `esp32:esp32:esp32` | 957,243 B (73%) |
 | ESP32_SmartTracking_Node | `esp32:esp32:esp32` | 309,263 B (23%) |
@@ -388,3 +389,10 @@ Expected warning: on Arduino 101 sketches, `rc-switch` says it "may be incompati
   (UNO laser tag sketch plus positive D5 output at 5 V; IR LED moved D5 -> D7; negative stays on D8). Compiles (5,182 B).
 - The COM21 upload failed: `not in sync: resp=0x00`, no serial output, and the "L" LED does not flicker on RESET. The ATmega328P (socketed
   DIP) is not running its bootloader. Next: reseat or check the chip and anything on D0/D1, reburn the bootloader (Arduino as ISP), or replace the chip.
+
+### 2026-10-23: Nano 5 s laser tag
+
+- Pulled `f5a8b80` (user): new `Arduino101_PIRLaserSoundTrigger` and `Arduino101_PIRLaserCH9311Trigger`. Both compile here; neither is uploaded yet.
+- The user created `components/nano/Nano_LaserTagIRNegativeTrigger5s` (copy of the Nano 500 ms sketch with `TRIGGER_PULSE_MS = 5000`).
+  Registered it in `sketches.json` and the task list, and updated its `PINOUT.md` timings. Uploaded to **COM15** (CH340 Nano, new bootloader);
+  the banner confirms `LOW for 5000 ms`.

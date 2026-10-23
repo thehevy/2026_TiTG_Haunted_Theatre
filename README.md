@@ -72,6 +72,7 @@ Recommended local setup:
 - `components/nano/Nano_LaserTagIRNegativeTrigger/Nano_LaserTagIRNegativeTrigger.ino`
   - Arduino Nano port of the laser tag IR trigger (500 ms; IR D2, relay D4 like `Nano_Node`)
   - Pinout: `components/nano/Nano_LaserTagIRNegativeTrigger/PINOUT.md`
+  - 5-second variant: `components/nano/Nano_LaserTagIRNegativeTrigger5s/`
 - `central-controller/`
   - Web controller app and deployment assets
 - `tools/arduino/`

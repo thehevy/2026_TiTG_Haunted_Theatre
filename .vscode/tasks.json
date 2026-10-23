@@ -79,6 +79,7 @@
         "UNO_LaserTagIRDualTrigger",
         "Nano_Node",
         "Nano_LaserTagIRNegativeTrigger",
+        "Nano_LaserTagIRNegativeTrigger5s",
         "ESP32_Node",
         "ESP32_SmartTracking_Node",
         "ESP32S3_SmartTracking_Node",
