@@ -1,6 +1,6 @@
 #include <Arduino.h>
 
-// Arduino Nano laser tag IR trigger: any shot from the Sharper Image laser tag gun pulls the negative trigger output LOW.
+// Arduino Nano laser tag IR trigger (5 s): any shot from the Sharper Image laser tag gun pulls the negative trigger output LOW for 5 s.
 // Same decoder as the Arduino 101 laser tag sketches. IRremote has no decoder for this gun's format, so the sketch
 // decodes frames itself by timing the IR receiver output
 // (idle HIGH, LOW while the IR carrier is received). Only the gun's frame shape triggers, so phones (Face ID /
@@ -307,7 +307,7 @@ void setup() {
   lastLevel = digitalRead(IR_RECEIVER_PIN);
   lastEdgeAt = micros();
 
-  Serial.println(F("Arduino Nano laser tag IR negative trigger ready"));
+  Serial.println(F("Arduino Nano laser tag IR negative trigger (5 s) ready"));
   Serial.print(F("Decoder: laser tag + NEC on D"));
   Serial.print(IR_RECEIVER_PIN);
   Serial.println(F(" (polled); other IR (phones, remotes) is ignored"));

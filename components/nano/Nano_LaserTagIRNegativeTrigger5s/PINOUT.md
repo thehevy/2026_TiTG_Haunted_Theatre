@@ -10,7 +10,8 @@ Target sketch:
 Any shot from the Sharper Image laser tag gun at the IR receiver pulls the negative trigger output (relay) LOW for 5 seconds.
 Other IR sources, such as iPhone Face ID/proximity IR, TV remotes, and sunlight, are ignored.
 
-This is the Arduino Nano port of `components/uno/UNO_LaserTagIRNegativeTrigger` (same decoder as the Arduino 101 laser tag
+This is the 5-second variant of `components/nano/Nano_LaserTagIRNegativeTrigger` (identical except `TRIGGER_PULSE_MS = 5000`).
+That sketch is the Arduino Nano port of `components/uno/UNO_LaserTagIRNegativeTrigger` (same decoder as the Arduino 101 laser tag
 sketches). The pins follow `Nano_Node`: IR on D2, relay on D4 (`Nano_Node` Relay 1).
 
 ## Board Setup
@@ -45,7 +46,7 @@ is used. D5 and D6 stay as inputs; an active-LOW relay module's own pull-ups hol
 - All messages print on **USB Serial** (`Serial`) through the USB connector; no GPIO pin carries serial text.
 - Open the Serial Monitor on the board's COM port at `115200` baud.
 - Expected messages:
-  - At startup: `Arduino Nano laser tag IR negative trigger ready`
+  - At startup: `Arduino Nano laser tag IR negative trigger (5 s) ready`
   - `Trigger: any laser tag shot (9-bit frame) -> negative trigger LOW for 5000 ms`
   - `Relay status LED: onboard D13`
   - Every 5 seconds: `Heartbeat: IR input D2, negative trigger output D4, trigger: any laser tag shot, shots 0, other codes 0`
@@ -189,5 +190,5 @@ flowchart LR
 5. Hold a phone near the receiver and unlock it with Face ID. Confirm `IR ignored: unrecognized signal` (or nothing) and that the relay stays off.
 6. Power-cycle the board. Confirm the relay does not click on during boot.
 
-The decoder was bench-verified on the Arduino 101 version (10 of 10 shots triggered, iPhone IR ignored). On the Nano (COM15,
-CH340 clone, new bootloader) the sketch uploaded and its startup banner and heartbeat were confirmed on 2026-10-20.
+The decoder was bench-verified on the Arduino 101 version (10 of 10 shots triggered, iPhone IR ignored). This 5 s Nano sketch
+was uploaded to COM15 (CH340 clone, new bootloader) on 2026-10-23, and its banner (`LOW for 5000 ms`) and heartbeat were confirmed.
