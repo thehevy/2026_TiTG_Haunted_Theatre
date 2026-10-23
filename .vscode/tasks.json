@@ -70,6 +70,8 @@
         "Arduino101_LaserTagIRNegativeTrigger10s",
         "Arduino101_LaserTagIRNegativeTrigger60s",
         "Arduino101_LaserTagIRDualTrigger",
+        "Arduino101_PIRLaserSoundTrigger",
+        "Arduino101_PIRLaserCH9311Trigger",
         "HauntedHouseRF",
         "UNO_Node",
         "UNO_SimpleIRNegativeTrigger",
