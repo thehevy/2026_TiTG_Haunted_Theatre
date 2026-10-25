@@ -73,6 +73,9 @@ Recommended local setup:
   - Arduino Nano port of the laser tag IR trigger (500 ms; IR D2, relay D4 like `Nano_Node`)
   - Pinout: `components/nano/Nano_LaserTagIRNegativeTrigger/PINOUT.md`
   - 5-second variant: `components/nano/Nano_LaserTagIRNegativeTrigger5s/`
+- `components/nano/Nano_MP3TriggerPlayer/Nano_MP3TriggerPlayer.ino`
+  - Arduino Nano + DIYables Serial MP3 Player: 4 negative triggers (D2-D5) + PIR (D8), each plays its own file once; other triggers ignored until it finishes
+  - Pinout: `components/nano/Nano_MP3TriggerPlayer/PINOUT.md`
 - `central-controller/`
   - Web controller app and deployment assets
 - `tools/arduino/`

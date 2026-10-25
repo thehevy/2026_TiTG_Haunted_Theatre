@@ -1,7 +1,7 @@
 # Session Notes
 
 **Created:** 2026-10-20
-**Last Updated:** 2026-10-20
+**Last Updated:** 2026-10-25
 
 Running handoff notes for resuming work on this repo from any machine. Update the
 [Current Status](#current-status) and [Next Steps](#next-steps) sections at the end of each session.
@@ -19,11 +19,21 @@ Running handoff notes for resuming work on this repo from any machine. Update th
 
 ## Current Status
 
-As of 2026-10-20:
+As of 2026-10-25:
 
+- **New 2026-10-25: `Nano_MP3TriggerPlayer`** (uploaded to **COM10**, CH340 Nano, new bootloader; banner + heartbeat confirmed;
+  not yet tested with the MP3 module): Nano + DIYables Serial MP3
+  Player (YX5300, SoftwareSerial D6 TX / D7 RX). Negative triggers D2-D5 + PIR D8 each play their own file (`01/001`-`01/005`)
+  once; all triggers are ignored until the file finishes (0x3D finished reply, status poll, `MAX_PLAY_MS` backup).
+- **New 2026-10-23: PIR/laser sound trigger sketches** (compiled, not yet uploaded or bench-tested):
+  - `Arduino101_PIRLaserSoundTrigger`: 3 PIR (D2-D4) + 1 laser (D5) each play their own **DFPlayer Mini** track
+    (`Serial1` on D0/D1, BUSY on D10). Each sensor's negative trigger output (D6-D9) stays LOW while its sound plays.
+  - `Arduino101_PIRLaserCH9311Trigger`: same trigger logic for the **CH9311-FL** player, which has no serial control. The
+    sketch "presses" K1-K4 (D10, D11, D12, A0) to GND; each output stays LOW for `SENSOR_SOUND_MS` (optional Busy LED tap on A1).
+  - Both: one sound at a time (other triggers ignored, not queued), 15 s cooldown per sensor, 10 s warm-up, high-Z idle outputs.
+- All 28 sketches compile with arduino-cli (checked 2026-10-23 by a full `intellisense` refresh).
 - arduino-cli compile/upload tooling is in the repo and working: `tools/arduino/arduino.ps1`,
   `tools/arduino/sketches.json`, and `.vscode/tasks.json`.
-- All 17 sketches compile with arduino-cli (see [baseline](#compile-verification-baseline)).
 - `ESP8266_Node.ino` build break is fixed (removed an orphaned block after `loop()`).
 - **First Arduino 101 upload succeeded** (2026-10-20): `Arduino101_SimpleIRNegativeTrigger60s` on **COM6** via arduino-cli.
   The uploader also flashed the board's BLE firmware, and serial heartbeat output is confirmed. Other board families are not yet upload-tested.
@@ -55,14 +65,20 @@ As of 2026-10-20:
 
 ## Next Steps
 
-1. Install the COM7 laser tag board in the prop and test hits at real range and angles. If needed, restrict team/mode with
+1. Bench-test `Nano_MP3TriggerPlayer` (see its `PINOUT.md` > Validation). SD card: folder `01`, files `001*.mp3`-`005*.mp3`.
+   If playback cuts off ~2 s in, the module clone misreports status: set `STATUS_POLL_MS = 0`.
+1. Bench-test `Arduino101_PIRLaserCH9311Trigger` (see its `PINOUT.md` > Validation). First load the sounds and set the
+   CH9311 DIP switch so a short K press plays one sound, then jumper-test K1-K4 to GND. **Measure K1 to GND before wiring:**
+   above 5 V needs NPN transistors and `KEY_DRIVE_VIA_TRANSISTOR = true`. Set `SENSOR_SOUND_MS` to each sound's length.
+2. Bench-test `Arduino101_PIRLaserSoundTrigger` with a DFPlayer Mini (SD card: `/mp3/0001.mp3`-`0004.mp3`, BUSY to D10).
+3. Install the COM7 laser tag board in the prop and test hits at real range and angles. If needed, restrict team/mode with
    `GUN_CODE_MASK`/`GUN_CODE_VALUE` (see its `PINOUT.md`). Flash the same sketch to other IR boards that should respond only to the gun.
    For a 5, 10, or 60-second relay pulse, use `Arduino101_LaserTagIRNegativeTrigger5s`, `...10s`, or `...60s`.
-2. Upload and bench-test `Arduino101_TimedTriggerRelay` (see its `PINOUT.md` > Validation):
+4. Upload and bench-test `Arduino101_TimedTriggerRelay` (see its `PINOUT.md` > Validation):
    `.\tools\arduino\arduino.ps1 upload Arduino101_TimedTriggerRelay -Port COM6`.
-3. Wire and bench-test the 60 s IR negative trigger on the Arduino 101 (COM6): confirm D4 goes LOW for 60 s on an IR signal
+5. Wire and bench-test the 60 s IR negative trigger on the Arduino 101 (COM6): confirm D4 goes LOW for 60 s on an IR signal
    and check the D5/D6 status LEDs. Pinout: `components/arduino101/Arduino101_SimpleIRNegativeTrigger60s/PINOUT.md`.
-4. Upload other sketches the same way as needed:
+6. Upload other sketches the same way as needed:
 
    ```powershell
    .\tools\arduino\arduino.ps1 ports
@@ -70,9 +86,9 @@ As of 2026-10-20:
    .\tools\arduino\arduino.ps1 monitor -Port COMx
    ```
 
-5. Do a first upload for one board of each other family (UNO/Nano, ESP32, ESP8266) and record results in the
+7. Do a first upload for one board of each other family (UNO/Nano, ESP32, ESP8266) and record results in the
    [Session Log](#session-log).
-6. On any **other** Windows 11 PC used for Arduino 101 uploads, install the DFU driver with Zadig first
+8. On any **other** Windows 11 PC used for Arduino 101 uploads, install the DFU driver with Zadig first
    (`SETUP_GUIDE.md` > Step 4 > *Windows 11: Intel drivers rejected, use Zadig instead*).
 
 ## Resume on This Machine
@@ -209,12 +225,15 @@ Result of `.\tools\arduino\arduino.ps1 compile all` on 2026-10-20:
 | Arduino101_LaserTagIRNegativeTrigger10s | `Intel:arc32:arduino_101` | 17,588 B (11%) |
 | Arduino101_LaserTagIRDualTrigger | `Intel:arc32:arduino_101` | 17,684 B (11%) |
 | Arduino101_LaserTagIRNegativeTrigger60s | `Intel:arc32:arduino_101` | 17,588 B (11%) |
+| Arduino101_PIRLaserSoundTrigger | `Intel:arc32:arduino_101` | 17,968 B (11%) (added 2026-10-23) |
+| Arduino101_PIRLaserCH9311Trigger | `Intel:arc32:arduino_101` | 16,716 B (10%) (added 2026-10-23) |
 | UNO_Node | `arduino:avr:uno` | 10,522 B (32%) |
 | UNO_SimpleIRNegativeTrigger | `arduino:avr:uno` | 9,414 B (29%) |
 | UNO_LaserTagIRNegativeTrigger | `arduino:avr:uno` | 5,106 B (15%), RAM 628 B (30%) |
 | UNO_LaserTagIRDualTrigger | `arduino:avr:uno` | 5,182 B (16%), RAM 628 B (30%) |
 | Nano_LaserTagIRNegativeTrigger | `arduino:avr:nano:cpu=atmega328` | 4,986 B (16%), RAM 623 B (30%) |
 | Nano_LaserTagIRNegativeTrigger5s | `arduino:avr:nano:cpu=atmega328` | 4,986 B (16%), RAM 623 B (30%) |
+| Nano_MP3TriggerPlayer | `arduino:avr:nano:cpu=atmega328` | 7,748 B (25%), RAM 469 B (22%) (added 2026-10-25) |
 | Nano_Node | `arduino:avr:nano:cpu=atmega328` | 10,226 B (33%) |
 | ESP32_Node | `esp32:esp32:esp32` | 957,243 B (73%) |
 | ESP32_SmartTracking_Node | `esp32:esp32:esp32` | 309,263 B (23%) |
@@ -248,6 +267,12 @@ Expected warning: on Arduino 101 sketches, `rc-switch` says it "may be incompati
 - **PowerShell 5.1 stderr:** ESP cores write size reports to stderr. `arduino.ps1` merges stderr so these aren't treated as failures. Keep that behavior if you edit `Invoke-Cli`.
 - **Proxy:** `proxy-dmz.intel.com:912` applies only on the Intel network. Off-network, run `setup -Proxy ''` and clear the IDE 1.8.19 proxy setting.
 - **Arduino 101 uploads:** close the serial monitor first. If an upload or firmware update stalls, use the MASTER RESET timing workaround.
+- **Arduino 101 BLE firmware update fails with `exit status 74`:** the `arduino101load` 2.3.0 package ships an empty `firmwares/`
+  folder, so boards whose BLE firmware needs updating fail and drop into DFU mode (recoverable). Fix: copy `firmwares/2.0.0/`
+  (`ble_core.bin`, `quark.bin`) from the cached `staging/packages/arduino101load-2.0.1-windows_386.tar.bz2` into
+  `%LOCALAPPDATA%\Arduino15\packages\Intel\tools\arduino101load\2.3.0\firmwares\`. Reinstalling the core may remove it.
+  Even with the files, the first BLE flash occasionally fails or logs `Error during download` yet ends in `SUCCESS`; re-upload
+  until the log shows `BLE version: verified`.
 - **Nano clones:** if an upload fails with sync errors, retry with `-Fqbn arduino:avr:nano:cpu=atmega328old`.
 - **ESP32:** if an upload stops at `Connecting...`, hold BOOT until writing starts.
 - **ESP-01:** GPIO0 must be held LOW at reset to enter flash mode. Use a 3.3V serial adapter.
@@ -396,3 +421,41 @@ Expected warning: on Arduino 101 sketches, `rc-switch` says it "may be incompati
 - The user created `components/nano/Nano_LaserTagIRNegativeTrigger5s` (copy of the Nano 500 ms sketch with `TRIGGER_PULSE_MS = 5000`).
   Registered it in `sketches.json` and the task list, and updated its `PINOUT.md` timings. Uploaded to **COM15** (CH340 Nano, new bootloader);
   the banner confirms `LOW for 5000 ms`.
+
+### 2026-10-23: PIR/laser sound trigger sketches (DFPlayer and CH9311)
+
+Work on the second machine (`D:\GitHub\Arduino101`). This entry also covers 2026-10-19 work on that machine, done before these notes existed.
+
+- **2026-10-19 recap** (commits `5d40b38`, `6b024df`): created the `*_SimpleIR*Trigger` sketches with IR/relay status LEDs
+  and a `PINOUT.md` for each (Arduino 101 and UNO negative trigger; ESP-12F and D1 R32 positive trigger). Added the Arduino 101
+  15 s/60 s variants, moved `HauntedHouseRF.ino` into its own folder, committed the ESP32-S3 smart tracking skull, and found and
+  fixed the empty `arduino101load` BLE firmware folder (see [Known Gotchas](#known-gotchas)). Arduino 101 uploads from that day
+  were later reflashed with laser tag sketches on the other machine, so they are not in the board inventory.
+- Pulled 31 commits from the other machine (laser tag sketches, tooling, these notes).
+- Added `Arduino101_PIRLaserSoundTrigger` (DFPlayer Mini). User requirements: up to 3 PIRs + 1 laser, each with its own negative
+  trigger output; each sound must finish before another can start; 15 s cooldown per sensor. User choices: the output stays LOW
+  for the whole sound; triggers during playback are ignored, not queued; the laser module is HIGH on beam-break; the PIRs are AM312 (3.3 V).
+  The DFPlayer uses `Serial1` (D0/D1) instead of the UNO-style SoftwareSerial on 10/11, and BUSY on D10 detects end of sound.
+- Added `Arduino101_PIRLaserCH9311Trigger`. The **CH9311-FL** is a 6-35 V, 20 W voice playback module with 8 MB flash, not a
+  microcontroller. A first version used serial commands (`7E 04 <track> EF`) taken from a summary of seller listings. The seller
+  manual showed the module has **no RX/TX**, only K1-K10 key inputs (CH9311 = low-level, pull Kn to GND; CH9312 = high-level/VIN),
+  so the sketch was rewritten to press K1-K4. "Busy" is only an LED, so sound length comes from `SENSOR_SOUND_MS`.
+  The K pins' idle voltage is undocumented: measure before wiring (direct if 5 V or less, else NPN transistors).
+- Both sketches are registered in `sketches.json` and `tasks.json`. Commit `f5a8b80` (the first two pushes got GitHub
+  `Internal Server Error`; the third succeeded).
+- IntelliSense showed `cannot open source file "Arduino.h"` because `.build/compile_commands.json` had never been generated on
+  this machine. `arduino.ps1 intellisense` regenerated all 28 entries.
+- Untracked leftovers on this machine: per-sketch `.vscode/c_cpp_properties.json` files, including three folders under old sketch
+  names (`Arduino101_SimpleIRPositiveTrigger`, `ESP12F_SimpleIRNegativeTrigger`, `WemosD1R32_SimpleIRNegativeTrigger`) that
+  contain only that file. Safe to delete.
+
+### 2026-10-25: Nano MP3 trigger player
+
+- Added `components/nano/Nano_MP3TriggerPlayer` for the DIYables Serial MP3 Player (YX5300; newbiely/arduinogetstarted tutorial
+  wiring, raw `7E FF 06 cmd 00 dh dl EF` frames, no library). Plays by folder/file (`0x0F`), so SD copy order does not matter.
+- Triggers: D2-D5 active LOW (`INPUT_PULLUP`, edge on press), D8 PIR active HIGH (edge on rise, 30 s warm-up). One file at a
+  time; triggers during playback are ignored, not queued; 1 s post-play lockout. The YX5300 has no BUSY pin, so the end is detected
+  from the `0x3D` reply, a `0x42` status poll, and a 5 min `MAX_PLAY_MS` safety unlock.
+- Registered in `sketches.json` and `tasks.json`. Compiles clean (7,748 B flash, 469 B RAM).
+- Uploaded to **COM10** on this machine (CH340 Nano, `cpu=atmega328` new bootloader). Startup banner and heartbeat confirmed.
+  The first upload attempt gave no output within 90 s but did not leave `avrdude` running; a direct re-run succeeded.
