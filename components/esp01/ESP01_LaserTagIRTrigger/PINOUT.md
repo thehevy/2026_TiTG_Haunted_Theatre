@@ -16,37 +16,42 @@ WiFi features (router or setup AP, settings page, MQTT, OTA, passwords) are the 
 
 ## Differences From the ESP32 Build
 
-Only GPIO0 and GPIO2 are free, so this build is **one input, one negative output**: no positive output, duration
-jumpers, LEDs, aux trigger, or DFPlayer. Set the pulse length with `main_ms` on the settings page (100-15000 ms).
-There is no button, so force the setup AP by **resetting 3 times within 10 s each** (or the serial command `AP`).
+Only GPIO0 and GPIO2 are free, so this build is **one input, one output**: no positive output, duration jumpers, LEDs,
+aux trigger, or DFPlayer. There is no button, so force the setup AP by **resetting 3 times within 10 s each** (or the
+serial command `AP`).
 
-**GPIO2 input, two choices** (settings page **Wired trigger input**, or `SET wired_input=`):
+**Out of the box it behaves like the old `ESP01_Node`** and uses the same wiring:
 
-| `wired_input`        | GPIO2 is                                      | Use for                                               |
-| -------------------- | --------------------------------------------- | ----------------------------------------------------- |
-| Off (default)        | IR receiver; decoded codes fire the output    | KY-022 / VS1838B receiver with the laser tag guns     |
-| 1 negative           | Digital input; fires when the sensor goes LOW | IR obstacle / break-beam modules that pull LOW        |
-| 2 positive           | Digital input; fires when the sensor goes HIGH | Sensors with an active-HIGH push-pull output         |
+- IR **sensor** on GPIO2, fires when the sensor output goes **HIGH** (`wired_input` = 2).
+- **GPIO0 goes HIGH for 1 s** to drive the relay through the NPN transistor (`main_ms` = 1000).
+- **15 s cooldown**: 1 s pulse + 14 s re-arm (`rearm_ms` = 14000). Sensor edges during the cooldown are ignored.
+
+All three can be changed on the settings page.
+
+**GPIO2 input choices** (settings page **Wired trigger input**, or `SET wired_input=`):
+
+| `wired_input`        | GPIO2 is                                       | Use for                                              |
+| -------------------- | ---------------------------------------------- | ---------------------------------------------------- |
+| 2 positive (default) | Digital input; fires when the sensor goes HIGH | The existing IR sensor (active-HIGH output)          |
+| 1 negative           | Digital input; fires when the sensor goes LOW  | IR obstacle / break-beam modules that pull LOW       |
+| Off                  | IR receiver; decoded codes fire the output     | KY-022 / VS1838B receiver with the laser tag guns    |
 
 While the wired input is on, IR code decoding is off (both use GPIO2). **Do not add a pull-down to GPIO2:** it must be
-HIGH at power-up or the ESP-01 will not boot, so a positive sensor must drive its output itself and idle LOW only after
-the board has started.
-
-**Replacing `ESP01_Node`** (IR sensor on GPIO2, 1 s pulse, 15 s cooldown): set `wired_input` = 2 (positive),
-`main_ms` = 1000, `rearm_ms` = 14000. The relay output on GPIO0 is now **active LOW** (see below).
+HIGH at power-up or the ESP-01 will not boot.
 
 ## Pin Map
 
-| Function              | ESP-01 pin | Notes                                                                    |
-| --------------------- | ---------- | ------------------------------------------------------------------------ |
-| IR receiver OUT or IR sensor OUT | GPIO2 | Must be HIGH at power-up (receivers and most sensor modules idle HIGH) |
-| Main negative trigger | GPIO0      | **Active LOW**; released when idle. Must not be pulled LOW at power-up   |
-| Serial TX / RX        | GPIO1 / 3  | USB-serial adapter for upload and the serial commands                    |
-| VCC / CH_PD (EN)      | 3.3 V      | 3.3 V only, 300 mA or more                                               |
+| Function              | ESP-01 pin | Notes                                                                       |
+| --------------------- | ---------- | --------------------------------------------------------------------------- |
+| IR sensor (or receiver) OUT | GPIO2 | Must be HIGH at power-up                                                  |
+| Relay driver output   | GPIO0      | **Active HIGH**: HIGH for `main_ms` on a trigger, LOW when idle             |
+| Serial TX / RX        | GPIO1 / 3  | USB-serial adapter for upload and the serial commands                       |
+| VCC / CH_PD (EN)      | 3.3 V      | 3.3 V only, 300 mA or more                                                  |
 
-**Relay on GPIO0:** use an active-LOW relay module or an opto/transistor input whose idle state leaves GPIO0 HIGH. A
-module that pulls its input LOW at rest stops the ESP-01 from booting. The archived `ESP01_Node` drove an **active-HIGH**
-relay on GPIO0; that relay module will not work with this sketch without changing it to an active-LOW input.
+**Relay on GPIO0 (unchanged from `ESP01_Node`):** drive the relay through an NPN transistor (1 kOhm to the base) and keep
+a **10 kOhm pull-up from GPIO0 to 3.3 V** so GPIO0 is HIGH at reset. The sketch drives GPIO0 LOW as its first step, but
+during the ~0.1-0.3 s boot GPIO0 is HIGH, so the relay can click briefly at power-up (the old sketch did the same). Do
+not connect a relay input that pulls GPIO0 LOW at rest; the ESP-01 will not boot.
 
 ## Setup and Upload
 
@@ -58,16 +63,19 @@ relay on GPIO0; that relay module will not work with this sketch without changin
 ## Wiring
 
 ```text
-ESP-01                                    IR receiver or IR sensor module (3.3 V)
+ESP-01                                    IR sensor module (3.3 V)
 3V3 ------------------------------------> VCC
-GPIO2 <---------------------------------- OUT
+GPIO2 <---------------------------------- OUT (HIGH = triggered)
 GND ------------------------------------> GND
 
-ESP-01                                    Relay module (active LOW)
-GPIO0 ----------------------------------> IN
-                                          VCC from a separate 5 V supply; common GND
+ESP-01                                    Relay driver (same as ESP01_Node)
+3V3 -- 10 kOhm --+
+GPIO0 -----------+-- 1 kOhm --> NPN base ; emitter -> GND ; collector -> relay module IN
+                                          Relay module VCC from a separate 5 V supply; common GND
 3V3 -> VCC and CH_PD (EN) ; GND -> GND
 ```
 
-Compile verified 2026-10-26: 343,180 B code in flash (32%; OTA fits in the 1 MB layout), 31,636 B RAM (39%). Not yet
+**Replacing `ESP01_Node`:** no rewiring. Flash this sketch, then set the WiFi and MQTT settings on the settings page.
+
+Compile verified 2026-10-26: 343,176 B code in flash (32%; OTA fits in the 1 MB layout), 31,636 B RAM (39%). Not yet
 bench-tested.

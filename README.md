@@ -160,11 +160,11 @@ The broker requires a login (`allow_anonymous false`); enter the MQTT username a
 
 ## Quick Wiring Checklist for ESP-01
 
-- IR receiver or IR sensor OUT -> GPIO2 (must be HIGH at power-up; no pull-down)
-- Receiver / sensor VCC -> 3.3V, GND -> GND
-- Active-LOW relay module IN -> GPIO0 (must not pull GPIO0 LOW at power-up)
+- IR sensor OUT -> GPIO2 (fires on HIGH by default; must be HIGH at power-up, no pull-down)
+- Sensor VCC -> 3.3V, GND -> GND
+- Relay driver -> GPIO0 (goes HIGH to fire): NPN transistor with 1k base resistor, plus a 10k pull-up from GPIO0 to 3.3V
 - Relay module VCC -> external 5V supply, GND common with the ESP-01
-- For a digital IR sensor set `wired_input` (1 = fires LOW, 2 = fires HIGH) on the settings page
+- For an IR receiver (laser tag guns) instead of a sensor, set `wired_input` to off on the settings page
 - Use a 3.3V USB serial adapter for the first upload; later updates can go over WiFi
 
 ## Required Libraries

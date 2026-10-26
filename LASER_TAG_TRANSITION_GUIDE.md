@@ -114,7 +114,7 @@ Read the old sketch name from the board's startup banner, the [worksheet](#deplo
 | `Arduino101_Node`                           | F    | No jumpers (0.5 s)     |
 | `ESP32_Node`, `AcebottESP32Max_Node`        | G    | No jumpers (0.5 s)     |
 | `ESP8266_Node`, `ESP12F_SimpleIRPositiveTrigger` | G | No jumpers (0.5 s)   |
-| `ESP01_Node`                                | G    | `main_ms` 1000, `rearm_ms` 14000 |
+| `ESP01_Node`                                | G    | Defaults match (1 s pulse, 15 s cooldown) |
 
 Any other duration from 0.1 to 15 s: leave D8/D9 open and set `main_ms` on the config page.
 
@@ -304,8 +304,8 @@ GPIO16/17 are now the DFPlayer serial pins, so nothing else may stay on them.
 
 | Wire              | Old GPIO | New GPIO | Action                                                                   |
 | ----------------- | -------- | -------- | ------------------------------------------------------------------------ |
-| IR sensor OUT     | 2        | 2        | No change; set `wired_input` = 2 (positive, as before) or 1 if it pulls LOW |
-| **Relay IN**      | **0**    | 0        | **Change the relay to an active-LOW input**: the output is now active LOW |
+| IR sensor OUT     | 2        | 2        | No change (default `wired_input` = 2, positive, as before)               |
+| Relay driver      | 0        | 0        | No change: GPIO0 still goes **HIGH** for 1 s (NPN driver + 10 kOhm pull-up) |
 
 Steps (every WiFi board):
 
@@ -314,7 +314,7 @@ Steps (every WiFi board):
 - [ ] Join the setup AP `Haunt-<device_id>` (password `hauntsetup`), open `http://192.168.4.1`, log in `admin` / `hauntadmin`.
 - [ ] Change the admin and AP passwords. Set the router SSID/password and the MQTT username/password.
 - [ ] Optional: set **Device ID** to the old MQTT ID (for example `2026-ht-node-01`) so the controller keeps the same topic.
-- [ ] ESP-01: set **Wired trigger input**, **Main pulse** 1000 ms, and **Re-arm gap** 14000 ms (old 1 s pulse, 15 s cooldown).
+- [ ] ESP-01: the defaults already match the old node (sensor HIGH, 1 s pulse, 15 s cooldown); change them only if needed.
 - [ ] **Save**, **Reboot**, and confirm the board joins the router and MQTT shows connected.
 - [ ] Test with the gun (or the ESP-01 sensor) and with **Test main** on the settings page.
 

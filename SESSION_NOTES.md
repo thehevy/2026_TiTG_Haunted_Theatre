@@ -28,7 +28,7 @@ As of 2026-10-26:
   page with basic auth (`admin`), per-boot form token, passwords never shown; MQTT `haunt/<id>/status|trigger|event|heartbeat`
   with broker login; OTA via page upload or `arduino.ps1 upload <sketch> -Port <ip>`. ESP IR capture is interrupt-driven.
   ESP32 build also covers the Acebott ESP32-Max (header is GPIO-labeled). ESP8266: no wired/aux/DFPlayer. ESP-01: one input
-  (GPIO2 = IR receiver, or a digital IR sensor via `wired_input`) + one active-LOW output, 1 MB flash. Defaults
+  (GPIO2 = IR sensor by default, or an IR receiver with `wired_input` off) + GPIO0 active-HIGH relay driver, 1 MB flash. Defaults
   `hauntsetup` / `hauntadmin` must be changed on first setup. The old WiFi node sketches are archived.
 - **New 2026-10-26: consolidated `*_LaserTagIRTrigger`** for Arduino 101, UNO, and Nano (one identical source, compiled, not
   yet uploaded). Any valid IR code (laser tag, TV, LED-strip remotes) -> D4 LOW + D5 HIGH for 0.5/5/10/15 s via D8/D9 jumpers
@@ -89,8 +89,8 @@ As of 2026-10-26:
 3. Bench-test the D2 wired input on `Arduino101_LaserTagIRTrigger` (`wired_input` = 1 with a switch to GND, then 2 with a
    10 kOhm pull-down and a 3.3 V/5 V signal). Confirm it is ignored while set to 0 (off) with D2 floating.
 4. Bench-test one WiFi board (ESP32 first; see `components/esp32/ESP32_LaserTagIRTrigger/PINOUT.md` > Validation): setup
-   AP, settings page, router join, MQTT with a broker login, page and `-Port <ip>` OTA. Then the ESP-01 with its IR sensor
-   (`wired_input` = 2, `main_ms` = 1000, `rearm_ms` = 14000) and an active-LOW relay input on GPIO0.
+   AP, settings page, router join, MQTT with a broker login, page and `-Port <ip>` OTA. Then the ESP-01 on its existing
+   sensor + NPN relay wiring (defaults should match the old node: 1 s pulse, 15 s cooldown).
 6. Upload other sketches the same way as needed:
 
    ```powershell
@@ -235,7 +235,7 @@ Result of `.\tools\arduino\arduino.ps1 compile all` on 2026-10-26 (active sketch
 | Nano_MP3TriggerPlayer | `arduino:avr:nano:cpu=atmega328` | 7,748 B (25%), RAM 469 B (22%) |
 | ESP32_LaserTagIRTrigger | `esp32:esp32:esp32` | 1,045,463 B (79%), RAM 54,288 B (16%) |
 | ESP8266_LaserTagIRTrigger | `esp8266:esp8266:nodemcuv2` | 342,704 B IROM (32%) |
-| ESP01_LaserTagIRTrigger | `esp8266:esp8266:generic:eesz=1M64` | 343,180 B IROM (32%) |
+| ESP01_LaserTagIRTrigger | `esp8266:esp8266:generic:eesz=1M64` | 343,176 B IROM (32%) |
 | ESP32_SmartTracking_Node | `esp32:esp32:esp32` | 309,263 B (23%) |
 | ESP32S3_SmartTracking_Node | `esp32:esp32:esp32s3` | 351,721 B (26%) |
 
@@ -483,6 +483,9 @@ Work on the second machine (`D:\GitHub\Arduino101`). This entry also covers 2026
   IROM; ESP-01 341,832 B IROM (`eesz=1M64`).
 - ESP-01 runs an IR **sensor** on GPIO2 (user confirmed), so its build has `WIRED_SHARES_IR_PIN`: with `wired_input` on,
   GPIO2 is a digital input and IR decoding is off. `rearm_ms` limit raised to 60000 (cooldowns like the old 15 s).
+- ESP-01 fix: `board_config.h` now sets `MAIN_OUTPUT_ACTIVE_HIGH` (GPIO0 HIGH to fire, as `ESP01_Node` did through its NPN
+  driver) and defaults `wired_input` = 2, `main_ms` = 1000, `rearm_ms` = 14000, so it is a drop-in replacement with no
+  rewiring. Other boards unchanged (new per-board `DEFAULT_*` macros default to the old values).
 - Archived the old WiFi sketches: `ESP32_Node` (+ `components/esp32/PINOUT.md`), the whole `components/acebott_esp32_max`,
   `ESP8266_Node` (+ `components/esp8266/PINOUT.md`), `ESP12F_SimpleIRPositiveTrigger`, `ESP01_Node`
   (+ `components/esp01/PINOUT.md`). Removed `IRremote` from the library list (no active sketch uses it). Central controller

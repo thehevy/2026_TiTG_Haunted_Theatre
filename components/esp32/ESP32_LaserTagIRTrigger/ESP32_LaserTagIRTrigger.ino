@@ -54,11 +54,29 @@ using WebServerType = ESP8266WebServer;
 #ifndef WIRED_POSITIVE_TEXT
 #define WIRED_POSITIVE_TEXT "Positive: HIGH to fire (needs 10 kOhm pull-down)"
 #endif
+#ifndef MAIN_OUTPUT_ACTIVE_HIGH
+#define MAIN_OUTPUT_ACTIVE_HIGH 0  // 1 = PIN_NEG drives HIGH to fire (ESP-01 transistor/relay driver)
+#endif
+#ifndef DEFAULT_WIRED_INPUT
+#define DEFAULT_WIRED_INPUT 0
+#endif
+#ifndef DEFAULT_MAIN_MS
+#define DEFAULT_MAIN_MS 500
+#endif
+#ifndef DEFAULT_REARM_MS
+#define DEFAULT_REARM_MS 250
+#endif
+
+#if MAIN_OUTPUT_ACTIVE_HIGH
+#define MAIN_NEG_TEXT LBL_NEG " HIGH"
+#else
+#define MAIN_NEG_TEXT LBL_NEG " LOW"
+#endif
 
 #if HAS_POS
-#define MAIN_OUTPUTS_TEXT LBL_NEG " LOW + " LBL_POS " HIGH"
+#define MAIN_OUTPUTS_TEXT MAIN_NEG_TEXT " + " LBL_POS " HIGH"
 #else
-#define MAIN_OUTPUTS_TEXT LBL_NEG " LOW"
+#define MAIN_OUTPUTS_TEXT MAIN_NEG_TEXT
 #endif
 
 // Index 1: jumper A to GND | 2: jumper B | 3: both. Index 0 (no jumper) uses the saved main_ms setting.
@@ -243,7 +261,12 @@ void writeNegative(uint8_t pin, bool active) {
 }
 
 void applyOutputs() {
+#if MAIN_OUTPUT_ACTIVE_HIGH
+  digitalWrite(PIN_NEG, mainPulse.active ? HIGH : LOW);
+  pinMode(PIN_NEG, OUTPUT);
+#else
   writeNegative(PIN_NEG, mainPulse.active);
+#endif
 #if HAS_POS
   digitalWrite(PIN_POS, mainPulse.active ? HIGH : LOW);
 #endif
@@ -1011,13 +1034,13 @@ void setDefaults() {
   config.magic = CONFIG_MAGIC;
   config.version = CONFIG_VERSION;
   strncpy(config.name, "unnamed", PROP_NAME_MAX);
-  config.mainMs = 500;
+  config.mainMs = DEFAULT_MAIN_MS;
   config.auxMs = 500;
-  config.rearmMs = 250;
+  config.rearmMs = DEFAULT_REARM_MS;
   config.pwMinFrames = 1;
   config.irFormats = IR_FORMAT_PULSE_WIDTH | IR_FORMAT_PULSE_DISTANCE;
   config.printTimings = 0;
-  config.wiredInput = WIRED_OFF;
+  config.wiredInput = DEFAULT_WIRED_INPUT;
   config.mp3Volume = 25;
   config.mp3ResetS = 120;
 #if HAS_WIFI
@@ -2364,6 +2387,10 @@ void printHeartbeat() {
 }
 
 void setup() {
+#if MAIN_OUTPUT_ACTIVE_HIGH
+  digitalWrite(PIN_NEG, LOW);  // first thing: keeps the boot-time relay blip as short as possible
+  pinMode(PIN_NEG, OUTPUT);
+#endif
   Serial.begin(115200);
 #if HAS_MP3
   MP3_BEGIN();
