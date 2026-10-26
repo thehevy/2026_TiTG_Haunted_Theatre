@@ -40,19 +40,11 @@ Recommended local setup:
 
 ## Repository Layout
 
-- `components/arduino101/Arduino101_Node/Arduino101_Node.ino`
-  - Arduino 101 RF-driven relay node (pulse, lockout pulse, toggle)
-  - Pinout: `components/arduino101/PINOUT.md`
-- `components/arduino101/Arduino101_LaserTagIRNegativeTrigger/Arduino101_LaserTagIRNegativeTrigger.ino`
-  - Arduino 101 IR relay trigger that fires only on Sharper Image laser tag gun shots (ignores phones and TV remotes)
-  - Pinout: `components/arduino101/Arduino101_LaserTagIRNegativeTrigger/PINOUT.md`
-  - 5-second variant: `components/arduino101/Arduino101_LaserTagIRNegativeTrigger5s/`
-  - 10-second variant: `components/arduino101/Arduino101_LaserTagIRNegativeTrigger10s/`
-  - 60-second variant: `components/arduino101/Arduino101_LaserTagIRNegativeTrigger60s/`
-  - Dual-output variant (D4 LOW + D5 HIGH, 500 ms): `components/arduino101/Arduino101_LaserTagIRDualTrigger/`
-- `components/arduino101/Arduino101_TimedTriggerRelay/Arduino101_TimedTriggerRelay.ino`
-  - Arduino 101 positive (D7) / negative (D8) trigger to relay pulse, selectable 1/5/15/30/60 s via A0-A4
-  - Pinout: `components/arduino101/Arduino101_TimedTriggerRelay/PINOUT.md`
+- `components/arduino101/Arduino101_LaserTagIRTrigger/Arduino101_LaserTagIRTrigger.ino`
+  - IR trigger for laser tag guns, TV remotes, and LED-strip remotes (ignores phones and sunlight): D4 LOW + D5 HIGH for
+    0.5/5/10/15 s selected by D8/D9 jumpers, an optional D2 wired trigger (negative or positive, off by default), plus an
+    aux D10 -> D11 negative trigger. Optional DFPlayer Mini sound (auto-detected). Same source as the UNO and Nano versions.
+  - Pinout: `components/arduino101/Arduino101_LaserTagIRTrigger/PINOUT.md`
 - `components/esp01/ESP01_Node.ino`
   - ESP-01 IR-trigger relay node with 1s pulse and 15s cooldown
   - Pinout: `components/esp01/PINOUT.md`
@@ -62,25 +54,22 @@ Recommended local setup:
 - `components/esp8266/ESP8266_Node.ino`
   - ESP8266 MQTT relay node
   - Pinout: `components/esp8266/PINOUT.md`
-- `components/uno/UNO_Node.ino`
-  - UNO serial relay node
-  - Pinout: `components/uno/PINOUT.md`
-- `components/uno/UNO_LaserTagIRNegativeTrigger/UNO_LaserTagIRNegativeTrigger.ino`
-  - UNO R3 port of the laser tag IR trigger (500 ms; gun shots only, ignores phones and TV remotes)
-  - Pinout: `components/uno/UNO_LaserTagIRNegativeTrigger/PINOUT.md`
-  - Dual-output variant (D8 LOW + D5 HIGH at 5 V, 500 ms): `components/uno/UNO_LaserTagIRDualTrigger/`
-- `components/nano/Nano_LaserTagIRNegativeTrigger/Nano_LaserTagIRNegativeTrigger.ino`
-  - Arduino Nano port of the laser tag IR trigger (500 ms; IR D2, relay D4 like `Nano_Node`)
-  - Pinout: `components/nano/Nano_LaserTagIRNegativeTrigger/PINOUT.md`
-  - 5-second variant: `components/nano/Nano_LaserTagIRNegativeTrigger5s/`
+- `components/uno/UNO_LaserTagIRTrigger/` and `components/nano/Nano_LaserTagIRTrigger/`
+  - UNO and Nano builds of the laser tag IR trigger (same pins and behavior, 5 V logic)
 - `components/nano/Nano_MP3TriggerPlayer/Nano_MP3TriggerPlayer.ino`
   - Arduino Nano + DIYables Serial MP3 Player: 4 negative triggers (D2-D5) + PIR (D8), each plays its own file once; other triggers ignored until it finishes
   - Pinout: `components/nano/Nano_MP3TriggerPlayer/PINOUT.md`
 - `central-controller/`
   - Web controller app and deployment assets
+- `archive/`
+  - Retired sketches (earlier laser tag and simple IR triggers, the RF/UNO/Nano node sketches, CH9311, WeMos D1 R32). Each `.ino` header lists why it was retired.
+- `LASER_TAG_TRANSITION_GUIDE.md`
+  - Printable per-board rewiring checklist for moving deployed props to the `*_LaserTagIRTrigger` sketches
 - `tools/arduino/`
   - `arduino.ps1` arduino-cli helper (setup, compile, upload, monitor)
   - `sketches.json` sketch-to-board (FQBN) map, required cores, and libraries
+- `tools/web-config/index.html`
+  - USB (Web Serial) settings page for the `*_LaserTagIRTrigger` sketches; open in Chrome or Edge
 - `SETUP_GUIDE.md`
   - Arduino 101 setup, firmware update, and troubleshooting
 - `CENTRAL_CONTROLLER_PLAN.md`
@@ -99,14 +88,14 @@ Recommended local setup:
 5. Upload and confirm the relay pulses for 1 second after each valid IR edge.
 6. Verify the 15 second cooldown by triggering the sensor twice in rapid succession.
 
-### 1. Arduino 101 Node
+### 1. Arduino 101 Laser Tag IR Trigger
 
-1. Open `components/arduino101/Arduino101_Node/Arduino101_Node.ino` in Arduino IDE 1.8.19.
-2. Review wiring in `components/arduino101/PINOUT.md`.
-3. Set board to Arduino/Genuino 101.
-4. Set port to COM5 (or your active board port).
-5. Upload and open Serial Monitor at 115200.
-6. Verify heartbeat and RF receive output.
+1. Review wiring in `components/arduino101/Arduino101_LaserTagIRTrigger/PINOUT.md`.
+2. Confirm the port: `.\tools\arduino\arduino.ps1 ports` (COM5 or your active board port).
+3. Upload: `.\tools\arduino\arduino.ps1 upload Arduino101_LaserTagIRTrigger -Port COM5`
+   (or Arduino IDE 1.8.19 with board Arduino/Genuino 101).
+4. Open Serial Monitor at 115200 and verify the banner and heartbeat.
+5. Set the prop name and durations with `tools/web-config/index.html`.
 
 ### 2. Central Controller (Dev Mode)
 
@@ -142,7 +131,7 @@ All sketches can be compiled and uploaded with arduino-cli from PowerShell or VS
 .\tools\arduino\arduino.ps1 setup                              # one time: board URLs, proxy, cores, libraries
 .\tools\arduino\arduino.ps1 ports                              # confirm the board's COM port
 .\tools\arduino\arduino.ps1 compile all
-.\tools\arduino\arduino.ps1 upload Arduino101_Node -Port COM5
+.\tools\arduino\arduino.ps1 upload Arduino101_LaserTagIRTrigger -Port COM5
 .\tools\arduino\arduino.ps1 monitor -Port COM5
 .\tools\arduino\arduino.ps1 intellisense                       # VS Code C/C++ IntelliSense for all sketches
 ```

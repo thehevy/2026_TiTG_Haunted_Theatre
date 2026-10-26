@@ -10,9 +10,9 @@
     .\tools\arduino\arduino.ps1 setup
     .\tools\arduino\arduino.ps1 list
     .\tools\arduino\arduino.ps1 ports
-    .\tools\arduino\arduino.ps1 compile Arduino101_Node
+    .\tools\arduino\arduino.ps1 compile Arduino101_LaserTagIRTrigger
     .\tools\arduino\arduino.ps1 compile all
-    .\tools\arduino\arduino.ps1 upload Arduino101_Node -Port COM5
+    .\tools\arduino\arduino.ps1 upload Arduino101_LaserTagIRTrigger -Port COM5
     .\tools\arduino\arduino.ps1 monitor -Port COM5
     .\tools\arduino\arduino.ps1 intellisense
 #>

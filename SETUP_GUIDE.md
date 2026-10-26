@@ -178,8 +178,10 @@ Install these in Arduino IDE using Sketch > Include Library > Manage Libraries.
 | ESP32 node (`components/esp32/ESP32_Node/ESP32_Node.ino`) | `IRremote` by Arduino-IRremote | Provides `IRremote.hpp` for KY-022/TL1838/VS1838B IR decode. |
 | ESP8266 node (`components/esp8266/ESP8266_Node.ino`) | `PubSubClient` by Nick O'Leary | Provides `PubSubClient.h` for MQTT. |
 | ESP8266 node (`components/esp8266/ESP8266_Node.ino`) | `IRremote` by Arduino-IRremote | Provides `IRremote.hpp` for KY-022/TL1838/VS1838B IR decode. |
-| UNO node (`components/uno/UNO_Node/UNO_Node.ino`) | `IRremote` by Arduino-IRremote | Provides `IRremote.hpp` for KY-022/TL1838/VS1838B IR decode. |
-| Arduino 101 RF node (`components/arduino101/Arduino101_Node/Arduino101_Node.ino`) | `rc-switch` by sui77 | Provides RF receive/decode support. |
+| Arduino 101 PIR/laser sound (`components/arduino101/Arduino101_PIRLaserSoundTrigger`) | `DFRobotDFPlayerMini` by DFRobot | DFPlayer Mini control. |
+
+The `*_LaserTagIRTrigger` and `Nano_MP3TriggerPlayer` sketches need no extra libraries (DFPlayer and MP3 module frames
+are sent directly; `EEPROM` and `SoftwareSerial` come with the board cores).
 
 Notes:
 
@@ -249,9 +251,9 @@ Sketch names, board FQBNs, required cores, and required libraries are defined in
 ```powershell
 .\tools\arduino\arduino.ps1 list                               # sketch names and FQBNs
 .\tools\arduino\arduino.ps1 ports                              # connected boards and COM ports
-.\tools\arduino\arduino.ps1 compile Arduino101_Node            # compile one sketch
+.\tools\arduino\arduino.ps1 compile Arduino101_LaserTagIRTrigger            # compile one sketch
 .\tools\arduino\arduino.ps1 compile all                        # compile every sketch
-.\tools\arduino\arduino.ps1 upload Arduino101_Node -Port COM5  # compile + upload
+.\tools\arduino\arduino.ps1 upload Arduino101_LaserTagIRTrigger -Port COM5  # compile + upload
 .\tools\arduino\arduino.ps1 monitor -Port COM5                 # serial monitor at 115200
 ```
 
@@ -266,7 +268,7 @@ In VS Code, the same actions are available from **Terminal > Run Task** (`Arduin
 | Arduino 101 | `Intel:arc32:arduino_101` | Confirm the port shows VID `8087` PID `0AB6` in `ports`. Close the serial monitor first. If upload stalls, press MASTER RESET right as the upload starts. Use IDE 1.8.19 for firmware updates. |
 | UNO | `arduino:avr:uno` | Standard upload. |
 | Nano | `arduino:avr:nano:cpu=atmega328` | For old-bootloader clones, add `-Fqbn arduino:avr:nano:cpu=atmega328old`. |
-| ESP32, WeMos D1 R32, Acebott ESP32-Max | `esp32:esp32:esp32` | If upload stops at `Connecting...`, hold BOOT until writing starts. |
+| ESP32, Acebott ESP32-Max | `esp32:esp32:esp32` | If upload stops at `Connecting...`, hold BOOT until writing starts. |
 | ESP32-S3 | `esp32:esp32:esp32s3` | Same BOOT-button workaround. |
 | ESP8266 NodeMCU / ESP-12F | `esp8266:esp8266:nodemcuv2` | Standard upload. |
 | ESP-01 | `esp8266:esp8266:generic` | Hold GPIO0 LOW at reset to enter flash mode. Use a 3.3V serial adapter. |
