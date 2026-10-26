@@ -427,5 +427,5 @@ line repeats at most every 10 s and the heartbeat shows `faults N`.
     confirm `01/001`, `01/002`, `01/003`, then `01/001`. Set `mp3_reset_s` = 10, play `01/001`, wait 10 s, and confirm
     the next shot plays `01/001` again. Trigger D2 and D10 and confirm `02/001` and `02/002`.
 
-Compile verified 2026-10-26: Arduino 101 30,664 B flash (19%); UNO/Nano 16,330 B flash (50-53%), 1,188 B RAM (58%).
+Compile verified 2026-10-26: Arduino 101 30,972 B flash (19%); UNO/Nano 16,670 B flash (51-54%), 1,188 B RAM (58%).
 Not yet bench-tested.

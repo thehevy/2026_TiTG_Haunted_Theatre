@@ -31,6 +31,9 @@ DFPlayer**. IR, both main outputs, the duration jumpers, both status LEDs, WiFi,
 | IR status LED         | D0            | 16   | 330 Ohm -> LED -> GND                                       |
 | Setup AP button       | D3            | 0    | **FLASH** button: hold 3 s while running                    |
 
+With a 5 V relay module, measure its IN (D1) to GND once with the relay off; it must be 3.6 V or less (see the
+ESP32 `PINOUT.md`, *Check a 5 V relay module*).
+
 Do not connect anything to D3, D4, or D8 (boot pins). The setup AP can also be forced by pressing **RST** 3 times within
 10 s each (power cycles do not count), or with the serial command `AP`.
 
@@ -60,4 +63,4 @@ D6 / D7 --[jumper]--> GND                 5 s / 10 s (both = 15 s)
 D0 -- 330 Ohm --> LED --> GND             IR status LED
 ```
 
-Compile verified 2026-10-26: 344,920 B code in flash (33%), IRAM 93%. Not yet bench-tested.
+Compile verified 2026-10-26: 345,192 B code in flash (33%), IRAM 93%. Not yet bench-tested.

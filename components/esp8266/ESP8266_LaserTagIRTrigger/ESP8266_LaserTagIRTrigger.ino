@@ -345,6 +345,8 @@ constexpr uint8_t MP3_CMD_QUERY_FOLDER_COUNT = 0x4E;
 constexpr uint8_t MP3_RPL_CARD_INSERTED = 0x3A;
 constexpr uint8_t MP3_RPL_CARD_REMOVED = 0x3B;
 constexpr uint8_t MP3_RPL_ERROR = 0x40;
+constexpr uint8_t MP3_ERR_FILE_OUT_OF_RANGE = 0x05;
+constexpr uint8_t MP3_ERR_FILE_NOT_FOUND = 0x06;
 constexpr uint8_t MP3_DEV_TF = 0x02;
 constexpr uint8_t MP3_IR_FOLDER = 1;
 constexpr uint8_t MP3_OTHER_FOLDER = 2;
@@ -486,16 +488,19 @@ void handleMp3Reply(uint8_t command, uint8_t dataHigh, uint8_t dataLow) {
     case MP3_RPL_ERROR:
       Serial.print(F("MP3 error 0x"));
       Serial.print(dataLow, HEX);
-      // A missing file past the end of folder 01 marks the end of the IR sequence.
-      if (mp3LastPlayFolder == MP3_IR_FOLDER && mp3LastPlayFile > 1) {
+      // Only a missing file past the end of folder 01 marks the end of the IR sequence; busy/checksum errors do not.
+      if ((dataLow == MP3_ERR_FILE_NOT_FOUND || dataLow == MP3_ERR_FILE_OUT_OF_RANGE) &&
+          mp3LastPlayFolder == MP3_IR_FOLDER && mp3LastPlayFile > 1) {
         mp3IrFileCount = mp3LastPlayFile - 1;
         Serial.print(F(": 01/ has "));
         Serial.print(mp3IrFileCount);
         Serial.println(F(" files; restarting at 001"));
         mp3NextIrFile = 1;
         mp3Play(MP3_IR_FOLDER, mp3NextIrFile++);
+      } else if (dataLow == MP3_ERR_FILE_NOT_FOUND || dataLow == MP3_ERR_FILE_OUT_OF_RANGE) {
+        Serial.println(F(" (file not found: check the SD card folder and file names)"));
       } else {
-        Serial.println(F(" (check the SD card folder and file names)"));
+        Serial.println(F(" (module busy or serial error; sound skipped)"));
       }
       mp3LastPlayFolder = 0;
       break;
@@ -516,10 +521,20 @@ void readMp3Replies() {
     }
     mp3RxFrame[mp3RxIndex++] = b;
     if (b == 0xEF && mp3RxFrame[0] == 0x7E && (mp3RxIndex == 8 || mp3RxIndex == 10)) {
-      handleMp3Reply(mp3RxFrame[3], mp3RxFrame[5], mp3RxFrame[6]);
+      if (mp3RxIndex == 8 || mp3ReplyChecksumOk()) {  // 8-byte replies (some clones) carry no checksum
+        handleMp3Reply(mp3RxFrame[3], mp3RxFrame[5], mp3RxFrame[6]);
+      }
       mp3RxIndex = 0;
     }
   }
+}
+
+bool mp3ReplyChecksumOk() {
+  uint16_t sum = 0;
+  for (uint8_t i = 1; i < 7; ++i) {
+    sum += mp3RxFrame[i];
+  }
+  return (uint16_t)(sum + (((uint16_t)mp3RxFrame[7] << 8) | mp3RxFrame[8])) == 0;
 }
 
 // Probes a few times after boot; a module that powers up later is still detected by its own init or status message.
@@ -836,9 +851,15 @@ uint8_t parsePulseWidthFrame(uint8_t start, uint32_t &code, uint8_t &bits) {
 }
 
 // A gun shot repeats its frame several times in one capture. Any frame start is accepted, so a capture whose first
-// frame was clipped (long range, glancing hit) still decodes from a later frame.
+// frame was clipped (long range, glancing hit) still decodes from a later frame. The code seen most often wins, so one
+// garbled frame cannot hide the others from pw_min_frames.
 bool decodePulseWidth(uint32_t &code, uint8_t &bits, uint8_t &frames, uint16_t &leaderMark) {
-  frames = 0;
+  constexpr uint8_t MAX_CANDIDATES = 4;
+  uint32_t codes[MAX_CANDIDATES];
+  uint8_t bitCounts[MAX_CANDIDATES];
+  uint8_t counts[MAX_CANDIDATES];
+  uint16_t leaders[MAX_CANDIDATES];
+  uint8_t candidates = 0;
   uint32_t frameCode = 0;
   uint8_t frameBits = 0;
   for (uint8_t i = 0; i < durationCount; i += 2) {
@@ -846,17 +867,32 @@ bool decodePulseWidth(uint32_t &code, uint8_t &bits, uint8_t &frames, uint16_t &
     if (next == 0) {
       continue;
     }
-    if (frames == 0) {
-      code = frameCode;
-      bits = frameBits;
-      leaderMark = durations[i];
+    uint8_t c = 0;
+    while (c < candidates && (codes[c] != frameCode || bitCounts[c] != frameBits)) {
+      ++c;
     }
-    if (frameCode == code && frameBits == bits) {
-      ++frames;
+    if (c == candidates && candidates < MAX_CANDIDATES) {
+      codes[c] = frameCode;
+      bitCounts[c] = frameBits;
+      counts[c] = 0;
+      leaders[c] = durations[i];
+      ++candidates;
+    }
+    if (c < candidates) {
+      ++counts[c];
     }
     i = next - 2;
   }
-  return frames >= config.pwMinFrames;
+  frames = 0;
+  for (uint8_t c = 0; c < candidates; ++c) {
+    if (counts[c] > frames) {
+      frames = counts[c];
+      code = codes[c];
+      bits = bitCounts[c];
+      leaderMark = leaders[c];
+    }
+  }
+  return frames > 0 && frames >= config.pwMinFrames;
 }
 
 void printUnknownFrame() {
@@ -1342,6 +1378,7 @@ uint32_t mqttBackoffMs = MQTT_BACKOFF_MIN_MS;
 unsigned long lastMqttHeartbeatAt = 0;
 unsigned long apButtonDownAt = 0;
 char csrfToken[17];
+char activeDeviceId[DEVICE_ID_MAX + 1];  // device_id in use since boot; a changed device_id applies after a reboot
 String webMessage;
 bool webMessageIsError = false;
 String updateError;
@@ -1355,11 +1392,11 @@ uint32_t hwRandom() {
 }
 
 String topicFor(const char *leaf) {
-  return String(F("haunt/")) + config.deviceId + '/' + leaf;
+  return String(F("haunt/")) + activeDeviceId + '/' + leaf;
 }
 
 String apSsid() {
-  String ssid = String(F("Haunt-")) + config.deviceId;
+  String ssid = String(F("Haunt-")) + activeDeviceId;
   if (ssid.length() > 32) {
     ssid.remove(32);
   }
@@ -1529,7 +1566,7 @@ void serviceMqtt(unsigned long now) {
   }
   mqtt.setServer(config.mqttHost, config.mqttPort);
   String statusTopic = topicFor("status");
-  bool ok = mqtt.connect(config.deviceId, config.mqttUser[0] ? config.mqttUser : nullptr,
+  bool ok = mqtt.connect(activeDeviceId, config.mqttUser[0] ? config.mqttUser : nullptr,
                          config.mqttUser[0] ? config.mqttPass : nullptr, statusTopic.c_str(), 1, true, "offline");
   if (ok) {
     mqttBackoffMs = MQTT_BACKOFF_MIN_MS;
@@ -1540,7 +1577,7 @@ void serviceMqtt(unsigned long now) {
     Serial.print(F("MQTT connected to "));
     Serial.print(config.mqttHost);
     Serial.print(F(" as "));
-    Serial.println(config.deviceId);
+    Serial.println(activeDeviceId);
   } else {
     Serial.print(F("MQTT connect to "));
     Serial.print(config.mqttHost);
@@ -1560,7 +1597,7 @@ void startNetServices() {
     return;
   }
   netServicesStarted = true;
-  ArduinoOTA.setHostname(config.deviceId);
+  ArduinoOTA.setHostname(activeDeviceId);
   ArduinoOTA.setPassword(config.adminPass);
   ArduinoOTA.onStart([]() {
     releaseOutputs();
@@ -2161,14 +2198,15 @@ void handleWebNotFound() {
 }
 
 void setupWifi(bool forceAp) {
+  memcpy(activeDeviceId, config.deviceId, sizeof(activeDeviceId));
   WiFi.persistent(false);
 #if defined(ESP32)
-  WiFi.setHostname(config.deviceId);
+  WiFi.setHostname(activeDeviceId);
   WiFi.mode(WIFI_STA);
   WiFi.setSleep(false);
 #else
   WiFi.mode(WIFI_STA);
-  WiFi.hostname(config.deviceId);
+  WiFi.hostname(activeDeviceId);
 #endif
   // Random values are made after the radio starts so the ESP32 RNG has a true entropy source.
   for (uint8_t i = 0; i < 4; ++i) {
@@ -2381,7 +2419,14 @@ void handleSet(char *arg) {
   Serial.print(F("OK "));
   Serial.print(arg);
   Serial.print('=');
-  Serial.println(isSecretKey(arg) ? "(set)" : value);
+  Serial.print(isSecretKey(arg) ? "(set)" : value);
+#if HAS_WIFI
+  if (strcmp(arg, "device_id") == 0 || strcmp(arg, "ap_pass") == 0 || strncmp(arg, "wifi_", 5) == 0 ||
+      strncmp(arg, "mqtt_", 5) == 0) {
+    Serial.print(F(" (SAVE, then REBOOT to apply)"));
+  }
+#endif
+  Serial.println();
 }
 
 void testOutput(bool aux) {

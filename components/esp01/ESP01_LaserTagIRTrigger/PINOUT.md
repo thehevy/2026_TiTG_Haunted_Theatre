@@ -90,5 +90,5 @@ GPIO0 -----------+-- 1 kOhm --> NPN base ; emitter -> GND ; collector -> relay m
 
 **Replacing `ESP01_Node`:** no rewiring. Flash this sketch, then set the WiFi and MQTT settings on the settings page.
 
-Compile verified 2026-10-26: 345,388 B code in flash (33%; OTA fits in the 1 MB layout), IRAM 93%. Not yet
+Compile verified 2026-10-26: 345,660 B code in flash (33%; OTA fits in the 1 MB layout), IRAM 93%. Not yet
 bench-tested.

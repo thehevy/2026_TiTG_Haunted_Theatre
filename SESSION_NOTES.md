@@ -95,9 +95,10 @@ As of 2026-10-26:
    sensor + NPN relay wiring (defaults should match the old node: 1 s pulse, 15 s cooldown). **First measure GPIO0 at
    power-up** (must be 2.5 V or more; see the ESP-01 `PINOUT.md`). Also check the stuck-IR message (short OUT to GND),
    that a 15 s pulse ends on time while the settings page reloads, and the 3x RST forced AP on the ESP8266.
-5. Next improvement items: the Medium/Low firmware items (DFPlayer reply checks, `pw_min_frames`, ESP pin float at
-   boot, SoftwareSerial interference, `SET device_id`), then optional TLS on the controller's Nginx site. Check the first
-   GitHub Actions run of `.github/workflows/build.yml` (Intel core install on the Windows runner is the riskiest step).
+5. Next improvement items: optional TLS on the controller's Nginx site. Check the GitHub Actions runs of
+   `.github/workflows/build.yml` (Intel core install on the Windows runner is the riskiest step). Known, not fixed:
+   on UNO/Nano a DFPlayer command (SoftwareSerial, ~10 ms with interrupts off) can clip the first frame of a shot that
+   arrives at that moment; later frames still decode unless `pw_min_frames` is raised.
 6. Upload other sketches the same way as needed:
 
    ```powershell
@@ -235,14 +236,14 @@ Result of `.\tools\arduino\arduino.ps1 compile all` on 2026-10-26 (active sketch
 
 | Sketch | FQBN | Flash used |
 | --- | --- | --- |
-| Arduino101_LaserTagIRTrigger | `Intel:arc32:arduino_101` | 30,664 B (19%) |
+| Arduino101_LaserTagIRTrigger | `Intel:arc32:arduino_101` | 30,972 B (19%) |
 | Arduino101_PIRLaserSoundTrigger | `Intel:arc32:arduino_101` | 17,968 B (11%) |
-| UNO_LaserTagIRTrigger | `arduino:avr:uno` | 16,328 B (50%), RAM 1,188 B (58%) |
-| Nano_LaserTagIRTrigger | `arduino:avr:nano:cpu=atmega328` | 16,330 B (53%), RAM 1,188 B (58%) |
+| UNO_LaserTagIRTrigger | `arduino:avr:uno` | 16,668 B (51%), RAM 1,188 B (58%) |
+| Nano_LaserTagIRTrigger | `arduino:avr:nano:cpu=atmega328` | 16,670 B (54%), RAM 1,188 B (58%) |
 | Nano_MP3TriggerPlayer | `arduino:avr:nano:cpu=atmega328` | 7,748 B (25%), RAM 469 B (22%) |
-| ESP32_LaserTagIRTrigger | `esp32:esp32:esp32` | 1,047,367 B (79%), RAM 54,344 B (16%) |
-| ESP8266_LaserTagIRTrigger | `esp8266:esp8266:nodemcuv2` | 344,920 B IROM (33%), IRAM 93% |
-| ESP01_LaserTagIRTrigger | `esp8266:esp8266:generic:eesz=1M64` | 345,388 B IROM (33%), IRAM 93% |
+| ESP32_LaserTagIRTrigger | `esp32:esp32:esp32` | 1,047,771 B (79%), RAM 54,376 B (16%) |
+| ESP8266_LaserTagIRTrigger | `esp8266:esp8266:nodemcuv2` | 345,192 B IROM (33%), IRAM 93% |
+| ESP01_LaserTagIRTrigger | `esp8266:esp8266:generic:eesz=1M64` | 345,660 B IROM (33%), IRAM 93% |
 | ESP32_SmartTracking_Node | `esp32:esp32:esp32` | 309,263 B (23%) |
 | ESP32S3_SmartTracking_Node | `esp32:esp32:esp32s3` | 351,721 B (26%) |
 
@@ -519,3 +520,8 @@ Work on the second machine (`D:\GitHub\Arduino101`). This entry also covers 2026
   `%LOCALAPPDATA%\Microsoft\WindowsApps\python3.13.exe`, not on PATH in VS Code terminals).
 - Tooling: `arduino.ps1 sync -Check`; CI workflow `.github/workflows/build.yml` (sync check + compile all on Windows,
   controller tests + `bash -n` on Ubuntu); `.gitattributes` `* text=auto`; shared-source rule in `copilot-instructions.md`.
+- Firmware Medium/Low fixes: DFPlayer replies need a valid checksum (10-byte frames) and only errors 0x05/0x06 (file
+  missing) end the folder 01 sequence; pulse-width decoding counts the most frequent frame code, so one garbled frame no
+  longer hides the rest from `pw_min_frames`; WiFi boards use the boot-time `device_id` for host name, AP name, MQTT
+  client ID and topics until reboot (serial `SET` of network keys says "SAVE, then REBOOT to apply"); ESP32/ESP8266
+  PINOUTs say to measure a 5 V relay module's IN (must be 3.6 V or less).

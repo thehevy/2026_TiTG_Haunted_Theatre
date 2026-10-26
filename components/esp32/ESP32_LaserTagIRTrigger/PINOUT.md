@@ -45,6 +45,14 @@ layout. This page covers the ESP32 pins and the WiFi features.
 Avoid adding anything to GPIO 0, 2, 5, 12, 15 (boot pins) and 34-39 (input only, no pull-ups). The relay outputs are
 released at boot until the sketch starts, so active-LOW relay modules stay off.
 
+**Check a 5 V relay module once (ESP pins are not 5 V tolerant):** idle outputs are released (input), so the module's
+own circuit sets the IN voltage. With the relay off, measure IN (GPIO4 / GPIO25) to GND:
+
+- **3.6 V or less:** fine (most opto-isolated modules sit near 3.3 V through the board's input clamp).
+- **Higher:** use a module with a 3.3 V trigger option (or a JD-VCC jumper), or a small NPN/MOSFET driver as on the
+  ESP-01. Setting `RELEASE_NEGATIVE_WHEN_IDLE 0` in `board_config.h` drives idle HIGH at 3.3 V instead, but some 5 V
+  modules then stay faintly on.
+
 ## WiFi Modes
 
 | Situation                                            | What the board does                                                       |
@@ -186,4 +194,4 @@ sensors and relay modules. Use an external 5 V supply for more than one relay mo
    still fires.
 10. Fire a 15 s pulse and reload the settings page repeatedly: confirm the relay still drops on time.
 
-Compile verified 2026-10-26: 1,047,367 B flash (79% of the OTA app partition), 54,344 B RAM (16%). Not yet bench-tested.
+Compile verified 2026-10-26: 1,047,771 B flash (79% of the OTA app partition), 54,376 B RAM (16%). Not yet bench-tested.
