@@ -1,3 +1,7 @@
+// ARCHIVED 2026-10-26: replaced by components/esp32/ESP32_LaserTagIRTrigger (same ESP32 build; the Acebott header is
+// labeled with GPIO numbers). Issues: same as ESP32_Node - IR command 0x00 matched phone IR, floating GPIO16 input,
+// no MQTT broker login, no OTA.
+//
 // Acebott ESP32-Max v1.0 Node
 // ESP32-WROOM-DA based board.
 // WiFi + MQTT relay controller with IR command map, AP config portal,

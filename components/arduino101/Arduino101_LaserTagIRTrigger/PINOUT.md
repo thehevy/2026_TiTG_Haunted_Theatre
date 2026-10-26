@@ -3,11 +3,18 @@
 **Created:** 2026-10-26
 **Last Updated:** 2026-10-26
 
-Target sketches (identical source; keep the copies in sync):
+Target sketches (one shared `.ino`; each folder's `board_config.h` holds its pin map):
 
 - `components/arduino101/Arduino101_LaserTagIRTrigger/Arduino101_LaserTagIRTrigger.ino`
 - `components/uno/UNO_LaserTagIRTrigger/UNO_LaserTagIRTrigger.ino`
 - `components/nano/Nano_LaserTagIRTrigger/Nano_LaserTagIRTrigger.ino`
+
+WiFi builds of the same sketch (ESP32 / Acebott ESP32-Max, ESP8266, ESP-01) add a settings web page, router or setup-AP
+connection, MQTT, and OTA updates: see `components/esp32/ESP32_LaserTagIRTrigger/PINOUT.md`.
+
+**Editing the sketch:** change only this folder's `.ino` (the Arduino 101 copy), then run
+`.\tools\arduino\arduino.ps1 sync` to copy it into the UNO, Nano, ESP32, ESP8266, and ESP-01 folders. Pins and
+features per board live in each folder's `board_config.h`.
 
 This sketch replaces every earlier laser tag, simple IR, and timed trigger relay sketch (now in `archive/`). It has these triggers:
 
@@ -226,7 +233,7 @@ Settings are stored in EEPROM and changed over the USB cable, with no reflashing
 | `name`          | unnamed | 1-16 chars  | Prop name shown in the heartbeat                                          |
 | `main_ms`       | 500     | 100-15000   | Main pulse when no duration jumper is installed                           |
 | `aux_ms`        | 500     | 100-15000   | D11 pulse                                                                 |
-| `rearm_ms`      | 250     | 0-5000      | Idle gap after each pulse                                                 |
+| `rearm_ms`      | 250     | 0-60000     | Idle gap after each pulse; use it as a cooldown (for example 15000 = 15 s) |
 | `ir_formats`    | 3       | 1-3         | 1 = laser tag / Sony only, 2 = NEC / Samsung / LED remotes only, 3 = both  |
 | `pw_min_frames` | 1       | 1-3         | Matching laser tag frames needed per shot; use 2 if phones or sunlight ever trigger |
 | `timings`       | 0       | 0-1         | 1 prints raw mark/space timings for unrecognized IR (to capture a gun that does not fire) |
@@ -416,5 +423,5 @@ flowchart LR
     confirm `01/001`, `01/002`, `01/003`, then `01/001`. Set `mp3_reset_s` = 10, play `01/001`, wait 10 s, and confirm
     the next shot plays `01/001` again. Trigger D2 and D10 and confirm `02/001` and `02/002`.
 
-Compile verified 2026-10-26: Arduino 101 29,628 B flash (19%); UNO/Nano 15,498 B flash (48-50%), 1,089 B RAM (53%).
+Compile verified 2026-10-26: Arduino 101 30,060 B flash (19%); UNO/Nano 15,558 B flash (48-50%), 1,169 B RAM (57%).
 Not yet bench-tested.

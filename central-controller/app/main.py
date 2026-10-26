@@ -42,7 +42,7 @@ def dashboard(request: Request) -> HTMLResponse:
         context={
             "statuses": statuses,
             "mqtt_connected": mqtt_service.is_connected(),
-            "commands": ["relay1:pulse", "relay2:pulse", "relay3:toggle"],
+            "commands": ["main", "aux"],
         },
     )
 

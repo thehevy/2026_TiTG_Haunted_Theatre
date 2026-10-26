@@ -13,13 +13,15 @@
     .\tools\arduino\arduino.ps1 compile Arduino101_LaserTagIRTrigger
     .\tools\arduino\arduino.ps1 compile all
     .\tools\arduino\arduino.ps1 upload Arduino101_LaserTagIRTrigger -Port COM5
+    .\tools\arduino\arduino.ps1 upload ESP32_LaserTagIRTrigger -Port 192.168.1.50   # over WiFi (ArduinoOTA)
+    .\tools\arduino\arduino.ps1 sync
     .\tools\arduino\arduino.ps1 monitor -Port COM5
     .\tools\arduino\arduino.ps1 intellisense
 #>
 [CmdletBinding()]
 param(
     [Parameter(Position = 0)]
-    [ValidateSet('list', 'ports', 'compile', 'upload', 'monitor', 'setup', 'intellisense')]
+    [ValidateSet('list', 'ports', 'compile', 'upload', 'monitor', 'setup', 'intellisense', 'sync')]
     [string]$Action = 'list',
 
     [Parameter(Position = 1)]
@@ -209,13 +211,22 @@ switch ($Action) {
     'upload' {
         $entry = Get-SketchEntry $Sketch
         if (-not $Port) { $Port = Find-Port $entry.Fqbn }
+        # An IP address or .local name means a WiFi board running ArduinoOTA; arduino-cli prompts for the admin password.
+        if ($Port -match '^\d{1,3}(\.\d{1,3}){3}$' -or $Port -like '*.local') {
+            Write-Host "=== Uploading $($entry.Name) [$($entry.Fqbn)] over WiFi to $Port (enter the board's admin password when asked)" -ForegroundColor Cyan
+            Invoke-Cli @('compile', '--fqbn', $entry.Fqbn, $entry.Path)
+            # Not piped through Invoke-Cli, so arduino-cli's password prompt reaches the console.
+            & $script:cli upload --fqbn $entry.Fqbn --port $Port --protocol network $entry.Path
+            if ($LASTEXITCODE -ne 0) { throw "arduino-cli exited with code $LASTEXITCODE" }
+            break
+        }
         if ($entry.Fqbn -like 'Intel:arc32:*') {
             Write-Host 'Arduino 101: close any Serial Monitor first. If upload stalls waiting for the device, press MASTER RESET right as the upload starts.' -ForegroundColor Yellow
         }
         elseif ($entry.Fqbn -like 'esp32:*') {
             Write-Host 'ESP32: if upload stops at "Connecting...", hold BOOT until writing starts.' -ForegroundColor Yellow
         }
-        elseif ($entry.Fqbn -eq 'esp8266:esp8266:generic') {
+        elseif ($entry.Fqbn -like 'esp8266:esp8266:generic*') {
             Write-Host 'ESP-01: GPIO0 must be held LOW at reset to enter flash mode.' -ForegroundColor Yellow
         }
         elseif ($entry.Fqbn -like 'arduino:avr:nano:*') {
@@ -247,6 +258,19 @@ switch ($Action) {
         [IO.File]::WriteAllText($dbPath, $json, (New-Object System.Text.UTF8Encoding($false)))
         Write-Host "Wrote $($entries.Count) entries to $dbPath" -ForegroundColor Green
         Write-Host 'If VS Code does not pick up the change, run "C/C++: Reset IntelliSense Database".' -ForegroundColor Yellow
+    }
+
+    'sync' {
+        # Copies each shared .ino (edit only the source copy) into the other sketch folders under their own file names.
+        foreach ($shared in @($config.sharedSources)) {
+            $source = Join-Path $repoRoot $shared.source
+            foreach ($name in @($shared.sketches)) {
+                $entry = Get-SketchEntry $name
+                $target = Join-Path $entry.Path ((Split-Path $entry.Path -Leaf) + '.ino')
+                Copy-Item -LiteralPath $source -Destination $target -Force
+                Write-Host "Synced $name" -ForegroundColor Green
+            }
+        }
     }
 
     'monitor' {

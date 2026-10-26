@@ -1,5 +1,8 @@
 # ESP8266 Pinout Guide
 
+> **Archived 2026-10-26.** Use `components/esp8266/ESP8266_LaserTagIRTrigger` (see its `PINOUT.md`). Issues are listed
+> at the top of `ESP8266_Node.ino`.
+
 **Created:** 2026-08-07  
 **Last Updated:** 2026-10-03
 

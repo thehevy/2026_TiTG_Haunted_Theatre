@@ -1,5 +1,8 @@
 # ESP-12F Simple IR Positive Trigger Pinout
 
+> **Archived 2026-10-26.** Use `components/esp8266/ESP8266_LaserTagIRTrigger`. This sketch fired on any IR, including
+> phone camera / Face ID IR.
+
 **Created:** 2026-10-19
 **Last Updated:** 2026-10-19
 

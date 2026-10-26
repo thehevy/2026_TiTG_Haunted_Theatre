@@ -10,11 +10,22 @@
     "esp8266:esp8266"
   ],
   "libraries": [
-    "IRremote",
     "PubSubClient",
     "VL53L1X",
     "ESP32Servo",
     "DFRobotDFPlayerMini"
+  ],
+  "sharedSources": [
+    {
+      "source": "components/arduino101/Arduino101_LaserTagIRTrigger/Arduino101_LaserTagIRTrigger.ino",
+      "sketches": [
+        "UNO_LaserTagIRTrigger",
+        "Nano_LaserTagIRTrigger",
+        "ESP32_LaserTagIRTrigger",
+        "ESP8266_LaserTagIRTrigger",
+        "ESP01_LaserTagIRTrigger"
+      ]
+    }
   ],
   "sketches": {
     "Arduino101_LaserTagIRTrigger": { "path": "components/arduino101/Arduino101_LaserTagIRTrigger", "fqbn": "Intel:arc32:arduino_101" },
@@ -22,12 +33,10 @@
     "UNO_LaserTagIRTrigger": { "path": "components/uno/UNO_LaserTagIRTrigger", "fqbn": "arduino:avr:uno" },
     "Nano_LaserTagIRTrigger": { "path": "components/nano/Nano_LaserTagIRTrigger", "fqbn": "arduino:avr:nano:cpu=atmega328" },
     "Nano_MP3TriggerPlayer": { "path": "components/nano/Nano_MP3TriggerPlayer", "fqbn": "arduino:avr:nano:cpu=atmega328" },
-    "ESP32_Node": { "path": "components/esp32/ESP32_Node", "fqbn": "esp32:esp32:esp32" },
+    "ESP32_LaserTagIRTrigger": { "path": "components/esp32/ESP32_LaserTagIRTrigger", "fqbn": "esp32:esp32:esp32" },
+    "ESP8266_LaserTagIRTrigger": { "path": "components/esp8266/ESP8266_LaserTagIRTrigger", "fqbn": "esp8266:esp8266:nodemcuv2" },
+    "ESP01_LaserTagIRTrigger": { "path": "components/esp01/ESP01_LaserTagIRTrigger", "fqbn": "esp8266:esp8266:generic:eesz=1M64" },
     "ESP32_SmartTracking_Node": { "path": "components/esp32/ESP32_SmartTracking_Node", "fqbn": "esp32:esp32:esp32" },
-    "ESP32S3_SmartTracking_Node": { "path": "components/esp32/ESP32S3_SmartTracking_Node", "fqbn": "esp32:esp32:esp32s3" },
-    "AcebottESP32Max_Node": { "path": "components/acebott_esp32_max/AcebottESP32Max_Node", "fqbn": "esp32:esp32:esp32" },
-    "ESP8266_Node": { "path": "components/esp8266/ESP8266_Node", "fqbn": "esp8266:esp8266:nodemcuv2" },
-    "ESP12F_SimpleIRPositiveTrigger": { "path": "components/esp8266/ESP12F_SimpleIRPositiveTrigger", "fqbn": "esp8266:esp8266:nodemcuv2" },
-    "ESP01_Node": { "path": "components/esp01/ESP01_Node", "fqbn": "esp8266:esp8266:generic" }
+    "ESP32S3_SmartTracking_Node": { "path": "components/esp32/ESP32S3_SmartTracking_Node", "fqbn": "esp32:esp32:esp32s3" }
   }
 }

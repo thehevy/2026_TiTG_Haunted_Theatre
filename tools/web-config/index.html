@@ -94,7 +94,7 @@
         <div class="hint">IR shots play 01/001, 01/002, ... in order. After this long with no IR sound the next shot starts at 001 again (0 = never). D2 plays 02/001, D10 plays 02/002.</div>
 
         <label for="f-rearm">Re-arm gap after each pulse (ms)</label>
-        <input id="f-rearm" type="number" min="0" max="5000" step="50" required>
+        <input id="f-rearm" type="number" min="0" max="60000" step="50" required>
         <div class="hint">Triggers during a pulse and this gap are ignored.</div>
 
         <label>IR codes that trigger</label>
@@ -287,7 +287,7 @@ function formValues() {
     name,
     main_ms: intIn('f-main', 100, 15000, 'Main pulse'),
     aux_ms: intIn('f-aux', 100, 15000, 'Aux pulse'),
-    rearm_ms: intIn('f-rearm', 0, 5000, 'Re-arm gap'),
+    rearm_ms: intIn('f-rearm', 0, 60000, 'Re-arm gap'),
     pw_min_frames: $('f-frames').value,
     ir_formats: String(formats),
     timings: $('f-timings').checked ? '1' : '0',

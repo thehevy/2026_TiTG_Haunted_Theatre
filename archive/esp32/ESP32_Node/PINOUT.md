@@ -1,5 +1,8 @@
 # ESP32 Pinout Guide
 
+> **Archived 2026-10-26.** Use `components/esp32/ESP32_LaserTagIRTrigger` (see its `PINOUT.md`). Issues are listed at
+> the top of `ESP32_Node.ino`.
+
 **Created:** 2026-08-07  
 **Last Updated:** 2026-10-03
 

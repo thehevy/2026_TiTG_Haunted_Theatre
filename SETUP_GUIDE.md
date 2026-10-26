@@ -174,21 +174,17 @@ Install these in Arduino IDE using Sketch > Include Library > Manage Libraries.
 
 | Sketch | Library | Why |
 | --- | --- | --- |
-| ESP32 node (`components/esp32/ESP32_Node/ESP32_Node.ino`) | `PubSubClient` by Nick O'Leary | Provides `PubSubClient.h` for MQTT. |
-| ESP32 node (`components/esp32/ESP32_Node/ESP32_Node.ino`) | `IRremote` by Arduino-IRremote | Provides `IRremote.hpp` for KY-022/TL1838/VS1838B IR decode. |
-| ESP8266 node (`components/esp8266/ESP8266_Node.ino`) | `PubSubClient` by Nick O'Leary | Provides `PubSubClient.h` for MQTT. |
-| ESP8266 node (`components/esp8266/ESP8266_Node.ino`) | `IRremote` by Arduino-IRremote | Provides `IRremote.hpp` for KY-022/TL1838/VS1838B IR decode. |
-| Arduino 101 PIR/laser sound (`components/arduino101/Arduino101_PIRLaserSoundTrigger`) | `DFRobotDFPlayerMini` by DFRobot | DFPlayer Mini control. |
+| ESP32 / ESP8266 / ESP-01 `*_LaserTagIRTrigger` | `PubSubClient` by Nick O'Leary | MQTT to the central controller. |
+| Arduino 101 PIR/laser sound (`components/arduino101/Arduino101_PIRLaserSoundTrigger`), ESP32 smart tracking | `DFRobotDFPlayerMini` by DFRobot | DFPlayer Mini control. |
+| ESP32 smart tracking (`components/esp32/ESP32_SmartTracking_Node`, `ESP32S3_SmartTracking_Node`) | `VL53L1X` by Pololu, `ESP32Servo` | ToF sensors and servo. |
 
-The `*_LaserTagIRTrigger` and `Nano_MP3TriggerPlayer` sketches need no extra libraries (DFPlayer and MP3 module frames
-are sent directly; `EEPROM` and `SoftwareSerial` come with the board cores).
+The Arduino 101 / UNO / Nano `*_LaserTagIRTrigger` builds and `Nano_MP3TriggerPlayer` need no extra libraries (DFPlayer
+and MP3 module frames are sent directly; `EEPROM` and `SoftwareSerial` come with the board cores).
 
 Notes:
 
-- `WiFi.h` on ESP32 is from the ESP32 board package.
-- `ESP8266WiFi.h` on ESP8266 is from the ESP8266 board package.
+- WiFi, web server, OTA, and mDNS on the ESP boards come from the ESP32 and ESP8266 board packages.
 - If compile output says `PubSubClient.h: No such file or directory`, install `PubSubClient` first.
-- If compile output says `IRremote.hpp: No such file or directory`, install `IRremote` first.
 
 ## Troubleshooting
 
@@ -254,8 +250,14 @@ Sketch names, board FQBNs, required cores, and required libraries are defined in
 .\tools\arduino\arduino.ps1 compile Arduino101_LaserTagIRTrigger            # compile one sketch
 .\tools\arduino\arduino.ps1 compile all                        # compile every sketch
 .\tools\arduino\arduino.ps1 upload Arduino101_LaserTagIRTrigger -Port COM5  # compile + upload
+.\tools\arduino\arduino.ps1 upload ESP32_LaserTagIRTrigger -Port 192.168.1.50  # WiFi (OTA) upload; asks for the admin password
+.\tools\arduino\arduino.ps1 sync                               # copy the shared laser tag .ino to every board folder
 .\tools\arduino\arduino.ps1 monitor -Port COM5                 # serial monitor at 115200
 ```
+
+The six `*_LaserTagIRTrigger` sketches share one `.ino`. Edit only
+`components/arduino101/Arduino101_LaserTagIRTrigger/Arduino101_LaserTagIRTrigger.ino`, run `sync`, then compile. Board
+pins and features are in each folder's `board_config.h`.
 
 If `-Port` is omitted, `upload` auto-detects the port only when exactly one connected board matches the sketch's board type. ESP boards that use CH340/CP210x USB bridges are not auto-identified, so pass `-Port` for them.
 
@@ -271,7 +273,8 @@ In VS Code, the same actions are available from **Terminal > Run Task** (`Arduin
 | ESP32, Acebott ESP32-Max | `esp32:esp32:esp32` | If upload stops at `Connecting...`, hold BOOT until writing starts. |
 | ESP32-S3 | `esp32:esp32:esp32s3` | Same BOOT-button workaround. |
 | ESP8266 NodeMCU / ESP-12F | `esp8266:esp8266:nodemcuv2` | Standard upload. |
-| ESP-01 | `esp8266:esp8266:generic` | Hold GPIO0 LOW at reset to enter flash mode. Use a 3.3V serial adapter. |
+| ESP-01 / ESP-01S (1 MB) | `esp8266:esp8266:generic:eesz=1M64` | Hold GPIO0 LOW at reset to enter flash mode. Use a 3.3V serial adapter. 512 KB modules are too small. |
+| Any WiFi `*_LaserTagIRTrigger` | (as above) | After the first USB upload, pass the board's IP as `-Port` to upload over WiFi. The PC must reach the board (same network, or joined to its setup AP). |
 
 COM5 can also be taken by other devices, such as a Bluetooth serial link. Always run `ports` and confirm the board before you upload.
 
@@ -283,7 +286,7 @@ The repo's `.vscode/c_cpp_properties.json` points it at `.build/compile_commands
 
 ```powershell
 .\tools\arduino\arduino.ps1 intellisense                  # all sketches (several minutes the first time)
-.\tools\arduino\arduino.ps1 intellisense ESP8266_Node     # refresh one sketch
+.\tools\arduino\arduino.ps1 intellisense ESP8266_LaserTagIRTrigger     # refresh one sketch
 ```
 
 Or run **Terminal > Run Task > Arduino: Refresh IntelliSense (all sketches)**.

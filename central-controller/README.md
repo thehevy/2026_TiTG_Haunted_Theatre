@@ -34,10 +34,14 @@ It listens for status updates on:
 
 - `haunt/+/status`
 
-These match the scaffold sketches in:
+These match the WiFi laser tag trigger sketches:
 
-- `components/esp32/ESP32_Node.ino`
-- `components/esp8266/ESP8266_Node.ino`
+- `components/esp32/ESP32_LaserTagIRTrigger/` (ESP32 DevKit, Acebott ESP32-Max)
+- `components/esp8266/ESP8266_LaserTagIRTrigger/`
+- `components/esp01/ESP01_LaserTagIRTrigger/`
+
+The boards also publish `haunt/<device-id>/event` (one JSON message per trigger) and `haunt/<device-id>/heartbeat`
+(JSON every 30 s). See `components/esp32/ESP32_LaserTagIRTrigger/PINOUT.md`.
 
 ## Quick Start (Rocky Linux)
 
@@ -77,11 +81,13 @@ If Wi-Fi is not available, repair the connection first and ensure the interface 
 
 ## Trigger Commands
 
-The current node sketches respond to these command strings:
+The laser tag trigger sketches respond to these command strings:
 
-- `relay1:pulse`
-- `relay2:pulse`
-- `relay3:toggle`
+- `main` - fire the main outputs (and play the next IR sound if a DFPlayer is fitted)
+- `aux` - fire the aux output (ESP32 build only)
+
+`relay1:pulse` and `relay2:pulse` are still accepted as aliases for `main` and `aux`. Commands obey the same lockout and
+re-arm gap as an IR shot.
 
 Use the UI or API to publish those commands.
 
@@ -95,7 +101,7 @@ Body:
 
 ```json
 {
-  "command": "relay1:pulse"
+  "command": "main"
 }
 ```
 

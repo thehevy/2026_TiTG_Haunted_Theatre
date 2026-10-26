@@ -1,5 +1,8 @@
 # ESP-01 Pinout Guide
 
+> **Archived 2026-10-26.** Use `components/esp01/ESP01_LaserTagIRTrigger` with `wired_input` = positive for the same IR
+> sensor on GPIO2. The GPIO0 relay output is now active LOW.
+
 **Created:** 2026-09-25
 **Last Updated:** 2026-09-25
 

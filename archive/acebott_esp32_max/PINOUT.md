@@ -1,5 +1,8 @@
 # Acebott ESP32-Max v1.0 Pinout Guide
 
+> **Archived 2026-10-26.** Use `components/esp32/ESP32_LaserTagIRTrigger` (the Acebott uses the ESP32 build). Issues are
+> listed at the top of `AcebottESP32Max_Node.ino`.
+
 **Created:** 2026-08-14  
 **Last Updated:** 2026-10-03
 

@@ -1,3 +1,6 @@
+// ARCHIVED 2026-10-26: replaced by components/esp32/ESP32_LaserTagIRTrigger (unified sketch with WiFi settings page).
+// Issues: IR fired Relay 1 on IRremote command 0x00 with no protocol check (phone IR decodes as 0x00); positive input
+// GPIO16 floats without an external pull-down; no MQTT broker login (the Mosquitto config requires one); no OTA.
 #include <WiFi.h>
 #include <PubSubClient.h>
 #include <WebServer.h>

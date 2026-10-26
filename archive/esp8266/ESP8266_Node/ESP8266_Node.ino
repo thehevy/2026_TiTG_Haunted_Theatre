@@ -1,3 +1,6 @@
+// ARCHIVED 2026-10-26: replaced by components/esp8266/ESP8266_LaserTagIRTrigger (unified sketch with WiFi settings page).
+// Issues: hard-coded placeholder WiFi credentials with no setup AP; IR fired on IRremote command 0x00 (phone IR);
+// no MQTT broker login; no OTA.
 #include <ESP8266WiFi.h>
 #include <PubSubClient.h>
 #include <IRremote.hpp>

@@ -1,3 +1,6 @@
+// ARCHIVED 2026-10-26: replaced by components/esp01/ESP01_LaserTagIRTrigger. Same IR sensor on GPIO2: set
+// wired_input = 2 (positive), main_ms = 1000, rearm_ms = 14000 for the old 1 s pulse / 15 s cooldown. The relay output
+// on GPIO0 is now active LOW (this sketch drove an active-HIGH relay). Issues: no WiFi, settings, or OTA.
 constexpr uint8_t IR_SENSOR_PIN = 2;    // GPIO2 on ESP-01, active HIGH
 constexpr uint8_t RELAY_PIN = 0;        // GPIO0 on ESP-01, relay driver output goes HIGH on trigger
 constexpr bool RELAY_ACTIVE_LOW = false;

@@ -1,3 +1,5 @@
+// ARCHIVED 2026-10-26: replaced by components/esp8266/ESP8266_LaserTagIRTrigger.
+// Issues: fires on any IR activity, including iPhone camera / Face ID IR; no WiFi configuration.
 #include <Arduino.h>
 #include <IRremote.hpp>
 

@@ -21,6 +21,15 @@ Running handoff notes for resuming work on this repo from any machine. Update th
 
 As of 2026-10-26:
 
+- **New 2026-10-26: WiFi builds `ESP32_`, `ESP8266_`, `ESP01_LaserTagIRTrigger`** (compiled, not yet uploaded). Same shared
+  `.ino` as the 101/UNO/Nano builds; each folder's `board_config.h` holds pins/features; `arduino.ps1 sync` copies the
+  Arduino 101 `.ino` to all six folders. WiFi: joins the router (default `TITG2026HT`) or runs a WPA2 setup AP
+  `Haunt-<device_id>` (no SSID, router unreachable for 20 s, BOOT/FLASH held 3 s, 3 quick resets, or serial `AP`); settings
+  page with basic auth (`admin`), per-boot form token, passwords never shown; MQTT `haunt/<id>/status|trigger|event|heartbeat`
+  with broker login; OTA via page upload or `arduino.ps1 upload <sketch> -Port <ip>`. ESP IR capture is interrupt-driven.
+  ESP32 build also covers the Acebott ESP32-Max (header is GPIO-labeled). ESP8266: no wired/aux/DFPlayer. ESP-01: one input
+  (GPIO2 = IR receiver, or a digital IR sensor via `wired_input`) + one active-LOW output, 1 MB flash. Defaults
+  `hauntsetup` / `hauntadmin` must be changed on first setup. The old WiFi node sketches are archived.
 - **New 2026-10-26: consolidated `*_LaserTagIRTrigger`** for Arduino 101, UNO, and Nano (one identical source, compiled, not
   yet uploaded). Any valid IR code (laser tag, TV, LED-strip remotes) -> D4 LOW + D5 HIGH for 0.5/5/10/15 s via D8/D9 jumpers
   (live) or the saved `main_ms`; optional D2 wired input (off by default); aux D10 edge -> D11 LOW 500 ms; triggers during a
@@ -36,10 +45,9 @@ As of 2026-10-26:
   (D5) each play their own **DFPlayer Mini** track (`Serial1` on D0/D1, BUSY on D10). Each sensor's negative trigger output
   (D6-D9) stays LOW while its sound plays. One sound at a time (other triggers ignored, not queued), 15 s cooldown per
   sensor, 10 s warm-up, high-Z idle outputs.
-- All 12 active sketches compile with arduino-cli (`compile all`, 2026-10-26).
+- All 10 active sketches compile with arduino-cli (`compile all`, 2026-10-26).
 - arduino-cli compile/upload tooling is in the repo and working: `tools/arduino/arduino.ps1`,
   `tools/arduino/sketches.json`, and `.vscode/tasks.json`.
-- `ESP8266_Node.ino` build break is fixed (removed an orphaned block after `loop()`).
 - **First Arduino 101 upload succeeded** (2026-10-20): `Arduino101_SimpleIRNegativeTrigger60s` on **COM6** via arduino-cli.
   The uploader also flashed the board's BLE firmware, and serial heartbeat output is confirmed. Other board families are not yet upload-tested.
 - The Arduino 101 DFU driver (WinUSB via Zadig) is installed on the setup machine. The Intel `dpinst` drivers do not install on
@@ -80,6 +88,9 @@ As of 2026-10-26:
 2. Bench-test `Arduino101_PIRLaserSoundTrigger` with a DFPlayer Mini (SD card: `/mp3/0001.mp3`-`0004.mp3`, BUSY to D10).
 3. Bench-test the D2 wired input on `Arduino101_LaserTagIRTrigger` (`wired_input` = 1 with a switch to GND, then 2 with a
    10 kOhm pull-down and a 3.3 V/5 V signal). Confirm it is ignored while set to 0 (off) with D2 floating.
+4. Bench-test one WiFi board (ESP32 first; see `components/esp32/ESP32_LaserTagIRTrigger/PINOUT.md` > Validation): setup
+   AP, settings page, router join, MQTT with a broker login, page and `-Port <ip>` OTA. Then the ESP-01 with its IR sensor
+   (`wired_input` = 2, `main_ms` = 1000, `rearm_ms` = 14000) and an active-LOW relay input on GPIO0.
 6. Upload other sketches the same way as needed:
 
    ```powershell
@@ -202,7 +213,8 @@ Helper commands (`.\tools\arduino\arduino.ps1 <action>`):
 | `list` | Sketch names and FQBNs |
 | `ports` | Connected boards and COM ports |
 | `compile <name\|all>` | Compile one or all sketches |
-| `upload <name> -Port COMx` | Compile and upload. Add `-Fqbn` to override the board. |
+| `upload <name> -Port COMx` | Compile and upload. Add `-Fqbn` to override the board. `-Port <ip>` uploads to a WiFi board over the network. |
+| `sync` | Copy the shared laser tag `.ino` (Arduino 101 copy) into the other five `*_LaserTagIRTrigger` folders |
 | `monitor -Port COMx` | Serial monitor (default 115200) |
 | `intellisense [name\|all]` | Generate `.build/compile_commands.json` for VS Code C/C++ IntelliSense |
 
@@ -216,18 +228,16 @@ Result of `.\tools\arduino\arduino.ps1 compile all` on 2026-10-26 (active sketch
 
 | Sketch | FQBN | Flash used |
 | --- | --- | --- |
-| Arduino101_LaserTagIRTrigger | `Intel:arc32:arduino_101` | 29,628 B (19%) |
+| Arduino101_LaserTagIRTrigger | `Intel:arc32:arduino_101` | 30,060 B (19%) |
 | Arduino101_PIRLaserSoundTrigger | `Intel:arc32:arduino_101` | 17,968 B (11%) |
-| UNO_LaserTagIRTrigger | `arduino:avr:uno` | 15,498 B (48%), RAM 1,089 B (53%) |
-| Nano_LaserTagIRTrigger | `arduino:avr:nano:cpu=atmega328` | 15,500 B (50%), RAM 1,089 B (53%) |
+| UNO_LaserTagIRTrigger | `arduino:avr:uno` | 15,558 B (48%), RAM 1,169 B (57%) |
+| Nano_LaserTagIRTrigger | `arduino:avr:nano:cpu=atmega328` | 15,560 B (50%), RAM 1,169 B (57%) |
 | Nano_MP3TriggerPlayer | `arduino:avr:nano:cpu=atmega328` | 7,748 B (25%), RAM 469 B (22%) |
-| ESP32_Node | `esp32:esp32:esp32` | 957,243 B (73%) |
+| ESP32_LaserTagIRTrigger | `esp32:esp32:esp32` | 1,045,463 B (79%), RAM 54,288 B (16%) |
+| ESP8266_LaserTagIRTrigger | `esp8266:esp8266:nodemcuv2` | 342,704 B IROM (32%) |
+| ESP01_LaserTagIRTrigger | `esp8266:esp8266:generic:eesz=1M64` | 343,180 B IROM (32%) |
 | ESP32_SmartTracking_Node | `esp32:esp32:esp32` | 309,263 B (23%) |
 | ESP32S3_SmartTracking_Node | `esp32:esp32:esp32s3` | 351,721 B (26%) |
-| AcebottESP32Max_Node | `esp32:esp32:esp32` | 956,675 B (72%) |
-| ESP8266_Node | `esp8266:esp8266:nodemcuv2` | 259,748 B IROM (24%) |
-| ESP12F_SimpleIRPositiveTrigger | `esp8266:esp8266:nodemcuv2` | 242,924 B IROM (23%) (2026-10-20) |
-| ESP01_Node | `esp8266:esp8266:generic` | 236,804 B IROM (22%) (2026-10-20) |
 
 ## Known Gotchas
 
@@ -468,6 +478,15 @@ Work on the second machine (`D:\GitHub\Arduino101`). This entry also covers 2026
   error), restarting at `001` after `mp3_reset_s` (default 120 s) with no IR sound; D2 -> `02/001`; D10 -> `02/002`.
   New settings `mp3_volume`, `mp3_reset_s` (config version 3). Compiles: 101 29,628 B; UNO/Nano 15,498 B flash, 1,089 B RAM
   (53%). `Nano_MP3TriggerPlayer` (YX5300, 4 inputs + PIR) stays separate.
+- WiFi builds: shared `.ino` now includes `board_config.h` per folder (101/UNO/Nano pin maps unchanged). Compiles: 101
+  30,048 B; UNO/Nano 15,548 B flash, 1,169 B RAM (57%); ESP32 1,044,799 B (79% of OTA app partition); ESP8266 342,640 B
+  IROM; ESP-01 341,832 B IROM (`eesz=1M64`).
+- ESP-01 runs an IR **sensor** on GPIO2 (user confirmed), so its build has `WIRED_SHARES_IR_PIN`: with `wired_input` on,
+  GPIO2 is a digital input and IR decoding is off. `rearm_ms` limit raised to 60000 (cooldowns like the old 15 s).
+- Archived the old WiFi sketches: `ESP32_Node` (+ `components/esp32/PINOUT.md`), the whole `components/acebott_esp32_max`,
+  `ESP8266_Node` (+ `components/esp8266/PINOUT.md`), `ESP12F_SimpleIRPositiveTrigger`, `ESP01_Node`
+  (+ `components/esp01/PINOUT.md`). Removed `IRremote` from the library list (no active sketch uses it). Central controller
+  command list is now `main` / `aux` (boards still accept `relay1:pulse` / `relay2:pulse`).
 - Archived (none ever deployed): `HauntedHouseRF` (RF prototype), `Arduino101_PIRLaserCH9311Trigger` (no serial control,
   separate 6-35 V supply), and the whole `components/wemos_d1_r32` folder (`WemosD1R32_Node`, `WemosD1R32_SimpleIRPositiveTrigger`;
   CH340 upload failure, any-IR triggering). Removed `rc-switch` from the library list (only archived sketches used it).

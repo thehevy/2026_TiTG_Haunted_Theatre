@@ -28,6 +28,7 @@ Thumbs.db
 
 # arduino-cli build output and generated IntelliSense compile database
 .build/
+components/**/build/
 
 # Logs
 *.log

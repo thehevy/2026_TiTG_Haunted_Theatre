@@ -1,16 +1,18 @@
 ﻿# 2026 TiTG Haunted Theatre
 
 **Created:** 2026-07-30
-**Last Updated:** 2026-10-20
+**Last Updated:** 2026-10-26
 
 Centralized haunted-house control project for mixed hardware:
 
 - Arduino 101 (Intel Curie)
-- ESP-01 bare module
-- ESP32
-- ESP8266
-- Arduino UNO
+- Arduino UNO and Nano
+- ESP32 (DevKit, Acebott ESP32-Max), ESP8266 (NodeMCU, ESP-12F), and ESP-01
 - Rocky Linux / Raspberry Pi server controllers
+
+Most props run one shared **laser tag IR trigger** sketch, built for every board from the same source. Each build has the
+same pins where the board allows, settings saved on the board, and a settings page: over USB for the Arduino boards,
+and over WiFi for the ESP boards.
 
 This repository contains:
 
@@ -41,35 +43,36 @@ Recommended local setup:
 ## Repository Layout
 
 - `components/arduino101/Arduino101_LaserTagIRTrigger/Arduino101_LaserTagIRTrigger.ino`
-  - IR trigger for laser tag guns, TV remotes, and LED-strip remotes (ignores phones and sunlight): D4 LOW + D5 HIGH for
-    0.5/5/10/15 s selected by D8/D9 jumpers, an optional D2 wired trigger (negative or positive, off by default), plus an
-    aux D10 -> D11 negative trigger. Optional DFPlayer Mini sound (auto-detected). Same source as the UNO and Nano versions.
-  - Pinout: `components/arduino101/Arduino101_LaserTagIRTrigger/PINOUT.md`
-- `components/esp01/ESP01_Node.ino`
-  - ESP-01 IR-trigger relay node with 1s pulse and 15s cooldown
-  - Pinout: `components/esp01/PINOUT.md`
-- `components/esp32/ESP32_Node.ino`
-  - ESP32 MQTT relay node
-  - Pinout: `components/esp32/PINOUT.md`
-- `components/esp8266/ESP8266_Node.ino`
-  - ESP8266 MQTT relay node
-  - Pinout: `components/esp8266/PINOUT.md`
-- `components/uno/UNO_LaserTagIRTrigger/` and `components/nano/Nano_LaserTagIRTrigger/`
-  - UNO and Nano builds of the laser tag IR trigger (same pins and behavior, 5 V logic)
+  - **Shared laser tag IR trigger source** (edit this copy, then run `.\tools\arduino\arduino.ps1 sync`). Any valid IR
+    code (laser tag guns, TV and LED-strip remotes; phones and sunlight ignored) pulls the negative output LOW and drives
+    the positive output HIGH for 0.5/5/10/15 s (jumpers) or the saved `main_ms`. Optional wired trigger (off by default),
+    aux trigger, and DFPlayer Mini sound. Each sketch folder's `board_config.h` holds that board's pins and features.
+  - Pinout and behavior: `components/arduino101/Arduino101_LaserTagIRTrigger/PINOUT.md`
+- `components/uno/UNO_LaserTagIRTrigger/`, `components/nano/Nano_LaserTagIRTrigger/`
+  - UNO and Nano builds (same pins, 5 V logic)
+- `components/esp32/ESP32_LaserTagIRTrigger/`, `components/esp8266/ESP8266_LaserTagIRTrigger/`, `components/esp01/ESP01_LaserTagIRTrigger/`
+  - WiFi builds (ESP32 DevKit / Acebott ESP32-Max, ESP8266 NodeMCU / ESP-12F, ESP-01): settings web page, router or
+    setup access point, MQTT to the central controller, OTA updates. Guide: `components/esp32/ESP32_LaserTagIRTrigger/PINOUT.md`
+- `components/arduino101/Arduino101_PIRLaserSoundTrigger/`
+  - Arduino 101: 3 PIR + 1 laser sensor, each plays its own DFPlayer track and holds its own negative output
 - `components/nano/Nano_MP3TriggerPlayer/Nano_MP3TriggerPlayer.ino`
   - Arduino Nano + DIYables Serial MP3 Player: 4 negative triggers (D2-D5) + PIR (D8), each plays its own file once; other triggers ignored until it finishes
   - Pinout: `components/nano/Nano_MP3TriggerPlayer/PINOUT.md`
+- `components/esp32/ESP32_SmartTracking_Node/`, `components/esp32/ESP32S3_SmartTracking_Node/`
+  - Tracking skull (ToF sensors, servo, LED eyes, DFPlayer). Pinouts: `components/esp32/SMART_TRACKING_PINOUT.md`,
+    `components/esp32/ESP32S3_SMART_TRACKING_PINOUT.md`
 - `central-controller/`
   - Web controller app and deployment assets
 - `archive/`
-  - Retired sketches (earlier laser tag and simple IR triggers, the RF/UNO/Nano node sketches, CH9311, WeMos D1 R32). Each `.ino` header lists why it was retired.
+  - Retired sketches (earlier laser tag and simple IR triggers; the RF, UNO, Nano, ESP32, Acebott, ESP8266, and ESP-01
+    node sketches; CH9311; WeMos D1 R32). Each `.ino` header lists why it was retired.
 - `LASER_TAG_TRANSITION_GUIDE.md`
   - Printable per-board rewiring checklist for moving deployed props to the `*_LaserTagIRTrigger` sketches
 - `tools/arduino/`
-  - `arduino.ps1` arduino-cli helper (setup, compile, upload, monitor)
+  - `arduino.ps1` arduino-cli helper (setup, compile, upload over USB or WiFi, monitor, sync shared sketch sources)
   - `sketches.json` sketch-to-board (FQBN) map, required cores, and libraries
 - `tools/web-config/index.html`
-  - USB (Web Serial) settings page for the `*_LaserTagIRTrigger` sketches; open in Chrome or Edge
+  - USB (Web Serial) settings page for every `*_LaserTagIRTrigger` build; open in Chrome or Edge
 - `SETUP_GUIDE.md`
   - Arduino 101 setup, firmware update, and troubleshooting
 - `CENTRAL_CONTROLLER_PLAN.md`
@@ -79,14 +82,15 @@ Recommended local setup:
 
 ## Quick Start
 
-### 0. ESP-01 IR Trigger Node
+### 0. ESP32 / ESP8266 / ESP-01 Laser Tag IR Trigger (WiFi)
 
-1. Open `components/esp01/ESP01_Node.ino` in Arduino IDE 2.x.
-2. Review wiring in `components/esp01/PINOUT.md`.
-3. Set board to Generic ESP8266 Module or the matching ESP-01 board package profile.
-4. Select the correct serial adapter port for the ESP-01 programmer.
-5. Upload and confirm the relay pulses for 1 second after each valid IR edge.
-6. Verify the 15 second cooldown by triggering the sensor twice in rapid succession.
+1. Review wiring in the board's `PINOUT.md` (`components/esp32/ESP32_LaserTagIRTrigger/PINOUT.md` has the WiFi guide).
+2. First upload over USB: `.\tools\arduino\arduino.ps1 upload ESP32_LaserTagIRTrigger -Port COMx`
+   (or `ESP8266_LaserTagIRTrigger`, `ESP01_LaserTagIRTrigger`).
+3. With no router reachable, the board starts the setup access point `Haunt-<device_id>` (password `hauntsetup`). Join it
+   and log in at `http://192.168.4.1` as `admin` / `hauntadmin`.
+4. Change both passwords, set the router SSID/password and the MQTT login, **Save**, then **Reboot**.
+5. Later updates can go over WiFi: `.\tools\arduino\arduino.ps1 upload ESP32_LaserTagIRTrigger -Port <board-ip>`.
 
 ### 1. Arduino 101 Laser Tag IR Trigger
 
@@ -132,6 +136,8 @@ All sketches can be compiled and uploaded with arduino-cli from PowerShell or VS
 .\tools\arduino\arduino.ps1 ports                              # confirm the board's COM port
 .\tools\arduino\arduino.ps1 compile all
 .\tools\arduino\arduino.ps1 upload Arduino101_LaserTagIRTrigger -Port COM5
+.\tools\arduino\arduino.ps1 upload ESP32_LaserTagIRTrigger -Port 192.168.1.50   # WiFi (OTA); asks for the admin password
+.\tools\arduino\arduino.ps1 sync                               # copy the shared laser tag .ino to every board folder
 .\tools\arduino\arduino.ps1 monitor -Port COM5
 .\tools\arduino\arduino.ps1 intellisense                       # VS Code C/C++ IntelliSense for all sketches
 ```
@@ -140,49 +146,42 @@ Arduino 101 firmware updates still require Arduino IDE 1.8.19 (Tools > Firmware 
 
 ## MQTT Topic Convention
 
-- Trigger command to device:
-  - `haunt/<device-id>/trigger`
-- Device status publish:
-  - `haunt/<device-id>/status`
+Used by the WiFi `*_LaserTagIRTrigger` builds. `<device-id>` is set on each board's settings page (default
+`haunt-<6 hex digits>`).
 
-Current node command strings:
+| Topic                          | Direction        | Payload                                                       |
+| ------------------------------ | ---------------- | ------------------------------------------------------------- |
+| `haunt/<device-id>/trigger`    | controller -> board | `main` or `aux` (`relay1:pulse` / `relay2:pulse` also accepted) |
+| `haunt/<device-id>/status`     | board -> controller | `online` (retained), `offline` as the last will            |
+| `haunt/<device-id>/event`      | board -> controller | JSON for each trigger: source, fired, pulse ms, IR code     |
+| `haunt/<device-id>/heartbeat`  | board -> controller | JSON every 30 s: name, board, firmware, IP, RSSI, counts    |
 
-- `relay1:pulse`
-- `relay2:pulse`
-- `relay3:toggle`
+The broker requires a login (`allow_anonymous false`); enter the MQTT username and password on each board.
 
 ## Quick Wiring Checklist for ESP-01
 
-- Sensor signal -> GPIO2 (active HIGH)
-- Sensor GND -> ESP-01 GND
-- Sensor VCC -> ESP-01 3.3V
-- Relay control -> GPIO0
-- Relay module VCC -> external 5V supply
-- Relay module GND -> common GND with ESP-01
-- Ensure the relay board is compatible with active LOW output logic
-- Verify GPIO0 is not being held low during reset by the relay board or wiring
-- Use a 3.3V USB serial adapter for programming the bare ESP-01 module
+- IR receiver or IR sensor OUT -> GPIO2 (must be HIGH at power-up; no pull-down)
+- Receiver / sensor VCC -> 3.3V, GND -> GND
+- Active-LOW relay module IN -> GPIO0 (must not pull GPIO0 LOW at power-up)
+- Relay module VCC -> external 5V supply, GND common with the ESP-01
+- For a digital IR sensor set `wired_input` (1 = fires LOW, 2 = fires HIGH) on the settings page
+- Use a 3.3V USB serial adapter for the first upload; later updates can go over WiFi
 
 ## Required Libraries
 
-Install these with Arduino IDE Library Manager before compiling the related sketches.
+`.\tools\arduino\arduino.ps1 setup` installs everything in `tools/arduino/sketches.json`. For Arduino IDE, install with
+Library Manager:
 
 | Board/Sketch | Required library | Notes |
 | --- | --- | --- |
-| Arduino 101 node | `rc-switch` by sui77 | Used for 433 MHz RF receive/decode in the Arduino 101 sketch. |
-| UNO node | `IRremote` by Arduino-IRremote | Required for KY-022/TL1838/VS1838B IR decode (`IRremote.hpp`). |
-| ESP32 node | `PubSubClient` by Nick O'Leary | Required for MQTT client support (`PubSubClient.h`). |
-| ESP32 node | `IRremote` by Arduino-IRremote | Required for KY-022/TL1838/VS1838B IR decode (`IRremote.hpp`). |
-| ESP8266 node | `PubSubClient` by Nick O'Leary | Required for MQTT client support (`PubSubClient.h`). |
-| ESP8266 node | `IRremote` by Arduino-IRremote | Required for KY-022/TL1838/VS1838B IR decode (`IRremote.hpp`). |
+| ESP32 / ESP8266 / ESP-01 `*_LaserTagIRTrigger` | `PubSubClient` by Nick O'Leary | MQTT client (`PubSubClient.h`). |
+| `Arduino101_PIRLaserSoundTrigger`, ESP32 smart tracking | `DFRobotDFPlayerMini` by DFRobot | DFPlayer Mini control. |
+| ESP32 smart tracking | `VL53L1X` by Pololu, `ESP32Servo` | ToF sensors and servo. |
 
-Included from board cores (no Library Manager install needed):
-
-- `WiFi.h` for ESP32 comes from the ESP32 board package.
-- `ESP8266WiFi.h` for ESP8266 comes from the ESP8266 board package.
+The Arduino 101 / UNO / Nano `*_LaserTagIRTrigger` builds and `Nano_MP3TriggerPlayer` need no extra libraries. WiFi,
+web server, OTA, and mDNS come from the ESP32 and ESP8266 board packages.
 
 ## Notes
 
 - Arduino 101 is a retired board and works best with Arduino IDE 1.8.19.
-- `rc-switch` on Arduino 101 may warn about architecture compatibility; test reliability in your environment.
 - Keep shell scripts LF-only for Rocky compatibility (enforced by `.gitattributes`).

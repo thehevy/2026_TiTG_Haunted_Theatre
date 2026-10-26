@@ -64,14 +64,12 @@
         "Arduino101_PIRLaserSoundTrigger",
         "UNO_LaserTagIRTrigger",
         "Nano_LaserTagIRTrigger",
+        "ESP32_LaserTagIRTrigger",
+        "ESP8266_LaserTagIRTrigger",
+        "ESP01_LaserTagIRTrigger",
         "Nano_MP3TriggerPlayer",
-        "ESP32_Node",
         "ESP32_SmartTracking_Node",
-        "ESP32S3_SmartTracking_Node",
-        "AcebottESP32Max_Node",
-        "ESP8266_Node",
-        "ESP12F_SimpleIRPositiveTrigger",
-        "ESP01_Node"
+        "ESP32S3_SmartTracking_Node"
       ],
       "default": "Arduino101_LaserTagIRTrigger"
     },

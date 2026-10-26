@@ -18,6 +18,7 @@ guide, find each prop's old sketch in the [Quick Lookup](#quick-lookup), and fol
 - [Card D: UNO Dual Trigger Sketch](#card-d-uno-dual-trigger-sketch)
 - [Card E: Nano Sketches](#card-e-nano-sketches)
 - [Card F: Arduino 101 Wired-Input Sketches](#card-f-arduino-101-wired-input-sketches)
+- [Card G: WiFi Boards (ESP32, Acebott, ESP8266, ESP-01)](#card-g-wifi-boards-esp32-acebott-esp8266-esp-01)
 - [60-Second Props: Add a Timer Relay](#60-second-props-add-a-timer-relay)
 - [Flash, Configure, and Test (Every Board)](#flash-configure-and-test-every-board)
 - [Deployed Board Worksheet](#deployed-board-worksheet)
@@ -111,6 +112,9 @@ Read the old sketch name from the board's startup banner, the [worksheet](#deplo
 | `Nano_LaserTagIRNegativeTrigger5s`          | E    | D8 to GND (5 s)        |
 | `Arduino101_TimedTriggerRelay`              | F    | Match the old selector (0.5/5/10/15 s); 30/60 s use a timer relay |
 | `Arduino101_Node`                           | F    | No jumpers (0.5 s)     |
+| `ESP32_Node`, `AcebottESP32Max_Node`        | G    | No jumpers (0.5 s)     |
+| `ESP8266_Node`, `ESP12F_SimpleIRPositiveTrigger` | G | No jumpers (0.5 s)   |
+| `ESP01_Node`                                | G    | `main_ms` 1000, `rearm_ms` 14000 |
 
 Any other duration from 0.1 to 15 s: leave D8/D9 open and set `main_ms` on the config page.
 
@@ -257,6 +261,62 @@ Steps:
   [timer relay](#60-second-props-add-a-timer-relay).
 - [ ] Flash, then on the config page set **Wired trigger input** to Negative or Positive and click **Apply & Save**.
 - [ ] Test ([checklist](#flash-configure-and-test-every-board)), plus: trigger D2 and confirm the relay pulse.
+
+## Card G: WiFi Boards (ESP32, Acebott, ESP8266, ESP-01)
+
+New sketches: **`ESP32_LaserTagIRTrigger`** (ESP32 DevKit and Acebott ESP32-Max), **`ESP8266_LaserTagIRTrigger`**
+(NodeMCU / ESP-12F), **`ESP01_LaserTagIRTrigger`**. Pins are GPIO numbers (NodeMCU labels in brackets). The old node
+sketches **held** a relay while an input stayed active; the new sketch fires a timed pulse instead.
+
+**ESP32 DevKit / Acebott ESP32-Max (old `ESP32_Node`, `AcebottESP32Max_Node`):**
+
+| Wire                        | Old GPIO | New GPIO | Action                                                        |
+| --------------------------- | -------- | -------- | ------------------------------------------------------------- |
+| IR receiver OUT             | 19       | 19       | No change                                                     |
+| Relay 1 IN (IR pulse)       | 4        | 4        | No change (main negative output)                              |
+| **Relay 2 IN**              | **5**    | 25       | **Move** to GPIO25 (aux output) or disconnect                 |
+| **Relay 3 IN**              | **18**   | -        | **Disconnect**: GPIO18 is now the positive output and idles LOW, which turns an active-LOW relay ON |
+| **Positive trigger source** | **16**   | 27       | **Move** to GPIO27 with its 10 kOhm pull-down; `wired_input` = positive |
+| **Negative trigger source** | **17**   | 27 or 26 | **Move** to GPIO27 (`wired_input` = negative, fires the main output) or GPIO26 (fires GPIO25) |
+
+GPIO16/17 are now the DFPlayer serial pins, so nothing else may stay on them.
+
+**ESP8266 NodeMCU (old `ESP8266_Node`):**
+
+| Wire                  | Old pin   | New pin   | Action                                                              |
+| --------------------- | --------- | --------- | ------------------------------------------------------------------- |
+| **IR receiver OUT**   | **D4 (2)** | D5 (14)  | **Move**                                                            |
+| Relay 1 IN            | D1 (5)    | D1 (5)    | No change (main negative output)                                    |
+| **Relay 2 IN**        | **D2 (4)** | -        | **Disconnect**: D2 is now the positive output and idles LOW (an active-LOW relay would turn ON) |
+| **Relay 3 IN**        | **D5 (14)** | -       | **Disconnect**: D5 is now the IR input                              |
+| **Trigger inputs**    | **D6, D7** | -        | **Disconnect**: D6/D7 are now the duration jumpers                  |
+
+**ESP-12F (old `ESP12F_SimpleIRPositiveTrigger`):**
+
+| Wire                  | Old GPIO | New GPIO      | Action                                                         |
+| --------------------- | -------- | ------------- | -------------------------------------------------------------- |
+| **IR receiver OUT**   | **4**    | 14            | **Move**                                                       |
+| **Positive load**     | **5**    | 4             | **Move** (GPIO5 is now the negative output)                    |
+| **IR status LED**     | **12**   | 16            | **Move**: GPIO12 is now duration jumper A; an LED there reads as a jumper |
+| **Relay status LED**  | **14**   | 2 (onboard)   | **Remove** (GPIO14 is now the IR input); the onboard LED is used |
+
+**ESP-01 (old `ESP01_Node`, IR sensor on GPIO2):**
+
+| Wire              | Old GPIO | New GPIO | Action                                                                   |
+| ----------------- | -------- | -------- | ------------------------------------------------------------------------ |
+| IR sensor OUT     | 2        | 2        | No change; set `wired_input` = 2 (positive, as before) or 1 if it pulls LOW |
+| **Relay IN**      | **0**    | 0        | **Change the relay to an active-LOW input**: the output is now active LOW |
+
+Steps (every WiFi board):
+
+- [ ] Unplug power, make the wiring changes above.
+- [ ] Flash over USB: `.\tools\arduino\arduino.ps1 upload <Board>_LaserTagIRTrigger -Port COMx`.
+- [ ] Join the setup AP `Haunt-<device_id>` (password `hauntsetup`), open `http://192.168.4.1`, log in `admin` / `hauntadmin`.
+- [ ] Change the admin and AP passwords. Set the router SSID/password and the MQTT username/password.
+- [ ] Optional: set **Device ID** to the old MQTT ID (for example `2026-ht-node-01`) so the controller keeps the same topic.
+- [ ] ESP-01: set **Wired trigger input**, **Main pulse** 1000 ms, and **Re-arm gap** 14000 ms (old 1 s pulse, 15 s cooldown).
+- [ ] **Save**, **Reboot**, and confirm the board joins the router and MQTT shows connected.
+- [ ] Test with the gun (or the ESP-01 sensor) and with **Test main** on the settings page.
 
 ## 60-Second Props: Add a Timer Relay
 
