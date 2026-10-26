@@ -16,6 +16,8 @@ class Settings:
     mqtt_username: str = os.getenv("MQTT_USERNAME", "")
     mqtt_password: str = os.getenv("MQTT_PASSWORD", "")
     mqtt_topic_prefix: str = os.getenv("MQTT_TOPIC_PREFIX", "haunt")
+    admin_username: str = os.getenv("ADMIN_USERNAME", "admin")
+    admin_password: str = os.getenv("ADMIN_PASSWORD", "")
 
 
 settings = Settings()

@@ -1,7 +1,7 @@
 ﻿# Haunted House Central Controller
 
 **Created:** 2026-07-30
-**Last Updated:** 2026-08-07
+**Last Updated:** 2026-10-26
 
 ## Table of Contents
 
@@ -19,10 +19,12 @@ This project is a Rocky Linux friendly controller web app for managing haunted-h
 
 ## Features
 
-- Web dashboard with quick trigger buttons
-- MQTT command publishing for device nodes
-- Database-backed live status board from device status messages
+- Web dashboard with quick trigger buttons, last heartbeat, and last trigger event per prop
+- MQTT command publishing for device nodes (`main` / `aux` only; device IDs validated)
+- Database-backed live status board from device status messages; every trigger event is logged
 - API endpoints for automation tools
+- Login required (HTTP basic auth, `ADMIN_USERNAME` / `ADMIN_PASSWORD` in `.env`); only `/api/health` is open
+- Starts even if the MQTT broker is down, and reconnects on its own
 
 ## Compatible Device Topic Pattern
 
@@ -30,9 +32,14 @@ This app sends commands to:
 
 - `haunt/<device-id>/trigger`
 
-It listens for status updates on:
+It listens on:
 
-- `haunt/+/status`
+- `haunt/+/status` (stored in `device_status`)
+- `haunt/+/event` (logged to `event_log`; last one shown on the dashboard)
+- `haunt/+/heartbeat` (last one kept in memory and shown on the dashboard, including IR faults)
+
+Messages from device IDs that do not match the firmware rule (letters, digits, inner hyphens, 1-32 characters) are
+ignored.
 
 These match the WiFi laser tag trigger sketches:
 
@@ -59,11 +66,11 @@ The boards also publish `haunt/<device-id>/event` (one JSON message per trigger)
    - `pip install -r requirements.txt`
 5. Copy environment file:
    - `cp .env.example .env`
-6. Update `.env` values for your MQTT broker and PostgreSQL database.
+6. Update `.env` values for your MQTT broker and PostgreSQL database, and set `ADMIN_PASSWORD` (the dashboard login).
    - Keep `DATABASE_URL` using password auth such as `scram-sha-256`.
-7. Run the app:
+7. Run the app (development only; production runs behind Nginx on `127.0.0.1`):
    - `uvicorn app.main:app --host 0.0.0.0 --port 8080`
-8. Open:
+8. Open and log in as `admin` with `ADMIN_PASSWORD`:
    - `http://<server-ip>:8080`
 
 ## Rocky Pre-Flight Checks
@@ -89,13 +96,20 @@ The laser tag trigger sketches respond to these command strings:
 `relay1:pulse` and `relay2:pulse` are still accepted as aliases for `main` and `aux`. Commands obey the same lockout and
 re-arm gap as an IR shot.
 
-Use the UI or API to publish those commands.
+Use the UI or API to publish those commands. Any other command is rejected with HTTP 422.
 
 ## API Examples
+
+All endpoints except `/api/health` need the admin login. The trigger endpoint only accepts a JSON body.
 
 ### Publish trigger
 
 - `POST /api/devices/{device_id}/trigger`
+
+```bash
+curl -u admin:"$ADMIN_PASSWORD" -H 'Content-Type: application/json' -d '{"command":"main"}' \
+  http://127.0.0.1:8080/api/devices/haunt-1a2b3c/trigger
+```
 
 Body:
 
@@ -111,7 +125,7 @@ Body:
 
 ### Health check
 
-- `GET /api/health`
+- `GET /api/health` (no login): `ok`, `database_ready`, `mqtt_connected`, `admin_password_set`
 
 ## Deploy with systemd
 
@@ -134,14 +148,14 @@ Use the included installer to configure dependencies, MQTT broker, app service, 
 2. Copy this project to your Rocky server.
 3. From the `central-controller` directory run:
    - `sudo bash deploy/rocky-install.sh`
-4. Edit app settings:
+4. Edit app settings (the installer generated `ADMIN_PASSWORD`; read it with `sudo grep ^ADMIN_PASSWORD= /opt/haunt-controller/.env`):
    - `/opt/haunt-controller/.env`
 5. Restart app after changing `.env`:
    - `sudo systemctl restart haunt-controller`
 6. Verify the service is healthy:
    - `systemctl status haunt-controller`
    - `curl http://127.0.0.1:8080/api/health`
-7. Open:
+7. Open and log in as `admin`:
    - `http://<server-ip>/`
 
 Installer behavior:
@@ -150,9 +164,13 @@ Installer behavior:
 - Creates app user `haunt`
 - Copies app to `/opt/haunt-controller`
 - Builds `.venv` and installs Python requirements
-- Installs and starts `haunt-controller` systemd service
+- Installs and starts `haunt-controller` systemd service (Uvicorn listens on `127.0.0.1:8080` only)
 - Installs Nginx proxy config from `nginx/haunt-controller.conf`
+- Creates `.env` with a random `ADMIN_PASSWORD` on first install; reinstalling keeps the existing `.env`
 - Performs a final health check at the end of the install
+
+The dashboard is plain HTTP through Nginx. Basic auth sends the password with every request, so keep the controller on
+the haunt's private network (or add TLS to the Nginx site).
 
 ## Verify Installation
 
@@ -183,12 +201,13 @@ and reload PostgreSQL before restarting the app.
 
 Use these helper scripts after install:
 
-- `sudo bash deploy/postgres-bootstrap.sh haunt haunt 'yourStrongPassword'`
+- `sudo bash deploy/postgres-bootstrap.sh haunt haunt`
 - `sudo bash deploy/rocky-harden.sh`
 - `sudo bash deploy/rocky-harden.sh --allow-mqtt`
-- `sudo bash deploy/mqtt-bootstrap.sh haunt-device 'yourStrongPassword'`
+- `sudo bash deploy/mqtt-bootstrap.sh haunt-device`
 
-Both bootstrap scripts require an explicit password on the command line. If the password is omitted, the script exits with an error and prints the exact corrective command to rerun.
+Both bootstrap scripts prompt for the password (typed twice, not echoed). Passwords are not accepted as arguments, so
+they stay out of shell history, and the scripts never print them.
 
 ## PostgreSQL Example
 
@@ -204,8 +223,9 @@ The app auto-creates tables on startup:
 Suggested Rocky setup order:
 
 1. `sudo bash deploy/rocky-install.sh`
-2. `sudo bash deploy/postgres-bootstrap.sh haunt haunt 'yourStrongPassword'`
+2. `sudo bash deploy/postgres-bootstrap.sh haunt haunt` (type the password at the prompt)
 3. Update `/opt/haunt-controller/.env` with the matching PostgreSQL password
-4. `sudo bash deploy/mqtt-bootstrap.sh haunt-device 'yourStrongPassword'`
+4. `sudo bash deploy/mqtt-bootstrap.sh haunt-device` (type the password at the prompt), then set `MQTT_USERNAME` /
+   `MQTT_PASSWORD` in `.env`
 5. `sudo bash deploy/rocky-harden.sh`
 6. `sudo systemctl restart haunt-controller`

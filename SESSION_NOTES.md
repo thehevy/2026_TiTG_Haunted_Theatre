@@ -95,8 +95,9 @@ As of 2026-10-26:
    sensor + NPN relay wiring (defaults should match the old node: 1 s pulse, 15 s cooldown). **First measure GPIO0 at
    power-up** (must be 2.5 V or more; see the ESP-01 `PINOUT.md`). Also check the stuck-IR message (short OUT to GND),
    that a 15 s pulse ends on time while the settings page reloads, and the 3x RST forced AP on the ESP8266.
-5. Next improvement items: controller `device_id` validation, command whitelist, and auth; then `copilot-instructions`
-   shared-source rule, `sync -Check`, and CI; then the Medium/Low firmware items.
+5. Next improvement items: the Medium/Low firmware items (DFPlayer reply checks, `pw_min_frames`, ESP pin float at
+   boot, SoftwareSerial interference, `SET device_id`), then optional TLS on the controller's Nginx site. Check the first
+   GitHub Actions run of `.github/workflows/build.yml` (Intel core install on the Windows runner is the riskiest step).
 6. Upload other sketches the same way as needed:
 
    ```powershell
@@ -509,3 +510,12 @@ Work on the second machine (`D:\GitHub\Arduino101`). This entry also covers 2026
   web/MQTT/upload work cannot hold a relay on; unauthorized firmware uploads are disconnected; ESP8266/ESP-01 3-reset
   counter moved to RTC memory (RST presses only, no flash writes). `applyOutputs()` now runs first in `setup()`. ESP-01
   docs: measure GPIO0 at power-up (10k pull-up into a 1k NPN base can read LOW and enter flash mode).
+- Controller hardening: basic-auth login (`ADMIN_USERNAME`/`ADMIN_PASSWORD` in `.env`, installer generates the password;
+  only `/api/health` is open), device IDs validated with the firmware rule, commands limited to `main`/`aux`, JSON-only
+  trigger POST, security headers, `lifespan` instead of `on_event`, background MQTT connect with auto-reconnect,
+  subscribes to `event` (logged) and `heartbeat` (shown on the dashboard with IR faults). Uvicorn binds `127.0.0.1`.
+  Bootstrap scripts prompt for passwords (no CLI args, never printed); SQL literal escaping; reinstall keeps `.env`.
+  18 pytest tests in `central-controller/tests` pass on Python 3.13 (Store install:
+  `%LOCALAPPDATA%\Microsoft\WindowsApps\python3.13.exe`, not on PATH in VS Code terminals).
+- Tooling: `arduino.ps1 sync -Check`; CI workflow `.github/workflows/build.yml` (sync check + compile all on Windows,
+  controller tests + `bash -n` on Ubuntu); `.gitattributes` `* text=auto`; shared-source rule in `copilot-instructions.md`.

@@ -15,6 +15,7 @@
     .\tools\arduino\arduino.ps1 upload Arduino101_LaserTagIRTrigger -Port COM5
     .\tools\arduino\arduino.ps1 upload ESP32_LaserTagIRTrigger -Port 192.168.1.50   # over WiFi (ArduinoOTA)
     .\tools\arduino\arduino.ps1 sync
+    .\tools\arduino\arduino.ps1 sync -Check   # exit 1 if a shared copy differs from its source
     .\tools\arduino\arduino.ps1 monitor -Port COM5
     .\tools\arduino\arduino.ps1 intellisense
 #>
@@ -35,7 +36,10 @@ param(
     [int]$Baud = 115200,
 
     # Used only by "setup". Pass an empty string to clear the arduino-cli proxy.
-    [string]$Proxy = $env:HTTPS_PROXY
+    [string]$Proxy = $env:HTTPS_PROXY,
+
+    # Used only by "sync": report out-of-date copies instead of overwriting them.
+    [switch]$Check
 )
 
 $ErrorActionPreference = 'Stop'
@@ -184,7 +188,7 @@ switch ($Action) {
         $urls = @($config.additionalUrls)
         Invoke-Cli (@('config', 'set', 'board_manager.additional_urls') + $urls)
         if ($Proxy) { Invoke-Cli @('config', 'set', 'network.proxy', $Proxy) }
-        else { & $script:cli config delete network.proxy 2>$null }
+        else { try { & $script:cli config delete network.proxy 2>$null } catch { } }
         Invoke-Cli @('config', 'set', 'network.connection_timeout', '600s')
         Invoke-Cli @('core', 'update-index')
         foreach ($core in $config.cores) { Invoke-Cli @('core', 'install', $core) }
@@ -262,14 +266,29 @@ switch ($Action) {
 
     'sync' {
         # Copies each shared .ino (edit only the source copy) into the other sketch folders under their own file names.
+        $stale = @()
         foreach ($shared in @($config.sharedSources)) {
             $source = Join-Path $repoRoot $shared.source
+            $sourceBytes = [IO.File]::ReadAllBytes($source)
             foreach ($name in @($shared.sketches)) {
                 $entry = Get-SketchEntry $name
                 $target = Join-Path $entry.Path ((Split-Path $entry.Path -Leaf) + '.ino')
+                if ($Check) {
+                    $same = (Test-Path -LiteralPath $target) -and
+                        [Linq.Enumerable]::SequenceEqual([byte[]]$sourceBytes, [byte[]][IO.File]::ReadAllBytes($target))
+                    if (-not $same) { $stale += $name }
+                    continue
+                }
                 Copy-Item -LiteralPath $source -Destination $target -Force
                 Write-Host "Synced $name" -ForegroundColor Green
             }
+        }
+        if ($Check) {
+            if ($stale.Count -gt 0) {
+                Write-Host "Out of sync with the shared source: $($stale -join ', '). Run: .\tools\arduino\arduino.ps1 sync" -ForegroundColor Red
+                exit 1
+            }
+            Write-Host 'All shared copies match their source.' -ForegroundColor Green
         }
     }
 

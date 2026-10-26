@@ -104,7 +104,13 @@
         <h2>Trigger Test</h2>
         <form id="triggerForm">
           <label for="device">Device ID</label>
-          <input id="device" name="device" placeholder="esp32-node-01" required />
+          <input id="device" name="device" list="knownDevices" placeholder="haunt-1a2b3c" required maxlength="32"
+                 pattern="[A-Za-z0-9]([A-Za-z0-9\-]{0,30}[A-Za-z0-9])?" title="Letters, digits, and inner hyphens (1-32)" />
+          <datalist id="knownDevices">
+            {% for device_id in statuses %}
+              <option value="{{ device_id }}"></option>
+            {% endfor %}
+          </datalist>
 
           <label for="command">Command</label>
           <select id="command" name="command">
@@ -125,15 +131,31 @@
             <tr>
               <th>Device</th>
               <th>Status</th>
-              <th>Updated (UTC)</th>
+              <th>Last heartbeat</th>
+              <th>Last event</th>
             </tr>
           </thead>
           <tbody>
           {% for device_id, status in statuses.items() %}
+            {% set hb = status.heartbeat %}
+            {% set ev = status.last_event %}
             <tr>
-              <td>{{ device_id }}</td>
-              <td>{{ status.payload }}</td>
-              <td>{{ status.updated_at }}</td>
+              <td>{{ device_id }}{% if hb.name %}<br /><small>{{ hb.name }}</small>{% endif %}</td>
+              <td>{{ status.payload or "-" }}<br /><small>{{ status.updated_at }}</small></td>
+              <td>
+                {% if status.heartbeat_at %}
+                  {{ hb.board }} {{ hb.ip }} RSSI {{ hb.rssi }}, up {{ hb.uptime_s }} s,
+                  IR {{ hb.ir_fired }} fired / {{ hb.ir_ignored }} ignored
+                  {% if hb.ir_faults %}<span class="status bad">/ {{ hb.ir_faults }} faults</span>{% endif %}
+                  <br /><small>{{ status.heartbeat_at }}</small>
+                {% else %}-{% endif %}
+              </td>
+              <td>
+                {% if status.last_event_at %}
+                  {{ ev.src }} {{ "fired" if ev.fired else "ignored" }} {{ ev.detail }}
+                  <br /><small>{{ status.last_event_at }}</small>
+                {% else %}-{% endif %}
+              </td>
             </tr>
           {% endfor %}
           </tbody>
@@ -162,7 +184,7 @@
 
         const data = await response.json();
         if (!response.ok) {
-          throw new Error(data.detail || "Request failed");
+          throw new Error(typeof data.detail === "string" ? data.detail : "Invalid device ID or command");
         }
 
         result.textContent = `Sent ${data.command} to ${data.device_id} on ${data.topic}`;

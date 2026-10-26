@@ -46,7 +46,8 @@ dnf install -y \
   mosquitto \
   nginx \
   policycoreutils-python-utils \
-  rsync
+  rsync \
+  openssl
 
 log "[2/9] Enabling broker and web server..."
 systemctl enable --now NetworkManager
@@ -70,6 +71,8 @@ SRC_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
 rsync -a --delete \
   --exclude ".venv" \
+  --exclude ".env" \
+  --exclude "*.db" \
   --exclude "__pycache__" \
   --exclude "*.pyc" \
   "${SRC_DIR}/" "${APP_DIR}/"
@@ -86,9 +89,14 @@ sudo -u "${APP_USER}" "${APP_DIR}/.venv/bin/pip" install -r "${APP_DIR}/requirem
 log "[6/9] Creating runtime env file if missing..."
 if [[ ! -f "${APP_DIR}/.env" ]]; then
   cp "${APP_DIR}/.env.example" "${APP_DIR}/.env"
+  admin_pass="$(openssl rand -base64 18 | tr -d '/+=' | cut -c1-16)"
+  sed -i "s|^ADMIN_PASSWORD=.*|ADMIN_PASSWORD=${admin_pass}|" "${APP_DIR}/.env"
+  unset admin_pass
   chown "${APP_USER}:${APP_GROUP}" "${APP_DIR}/.env"
   chmod 640 "${APP_DIR}/.env"
-  log "Created ${APP_DIR}/.env. Edit MQTT values before production use."
+  log "Created ${APP_DIR}/.env with a random ADMIN_PASSWORD (dashboard user: admin). Read it with:"
+  log "  sudo grep ^ADMIN_PASSWORD= ${APP_DIR}/.env"
+  log "Edit MQTT values before production use."
 fi
 
 if ! grep -Eq '^DATABASE_URL=' "${APP_DIR}/.env"; then
@@ -109,7 +117,7 @@ systemctl reload nginx
 log "[9/9] Validating the installation..."
 if ! curl -fsS "http://127.0.0.1:8080/api/health" >/tmp/haunt-controller-health.txt 2>/dev/null; then
   echo "Health check failed. Review the app log and PostgreSQL auth state." >&2
-  echo "Recommended action: ensure PostgreSQL is bootstrapped with a password-based auth rule, then rerun: sudo bash deploy/postgres-bootstrap.sh haunt haunt 'yourStrongPassword'" >&2
+  echo "Recommended action: ensure PostgreSQL is bootstrapped with a password-based auth rule, then rerun: sudo bash deploy/postgres-bootstrap.sh haunt haunt" >&2
   journalctl -u "${SERVICE_NAME}" -n 50 --no-pager || true
   fail "Application health check did not pass." "Run the PostgreSQL bootstrap first, confirm DATABASE_URL is correct, and then retry the install."
 fi

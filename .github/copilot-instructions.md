@@ -1,7 +1,7 @@
 ﻿# Copilot Instructions for This Workspace
 
 **Created:** 2026-07-30
-**Last Updated:** 2026-08-07
+**Last Updated:** 2026-10-26
 
 ## Project Context
 
@@ -49,6 +49,9 @@ When answering requests in this workspace:
 
 - Boards Manager URL: [Arduino package index](https://downloads.arduino.cc/packages/package_index.json)
 - CLI builds: use `tools/arduino/arduino.ps1` with the sketch/FQBN map in `tools/arduino/sketches.json`; add new sketches to that map and to the `sketch` input in `.vscode/tasks.json`
+- Shared laser tag source: edit only `components/arduino101/Arduino101_LaserTagIRTrigger/Arduino101_LaserTagIRTrigger.ino`, then run `.\tools\arduino\arduino.ps1 sync` to copy it to the UNO, Nano, ESP32, ESP8266, and ESP-01 folders (listed under `sharedSources` in `sketches.json`). Board differences go in each folder's `board_config.h`, never in the copies
+- CI (`.github/workflows/build.yml`) fails if a shared copy differs from its source (`sync -Check`), if any sketch fails to compile, or if the controller tests in `central-controller/tests` fail
+- Controller: run tests with `python -m pytest -q tests` from `central-controller` after `pip install -r requirements-dev.txt`
 
 - If behind proxy, mention host/port configuration in IDE preferences
 - For controller deployment, keep MQTT and database credentials in .env, not in committed source

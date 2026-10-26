@@ -17,21 +17,31 @@ handle_err() {
   local line_no="$1"
   local command="$2"
   trap - ERR
-  fail "Command failed at line ${line_no}: ${command}" "Check the Mosquitto setup logs, confirm you are root, and rerun: sudo bash deploy/mqtt-bootstrap.sh <username> <password>"
+  fail "Command failed at line ${line_no}: ${command}" "Check the Mosquitto setup logs, confirm you are root, and rerun: sudo bash deploy/mqtt-bootstrap.sh <username>"
 }
 
 trap 'handle_err "${LINENO}" "${BASH_COMMAND}"' ERR
 
 MQTT_USER="${1:-haunt-device}"
-MQTT_PASS="${2:-}"
 
 if [[ "${EUID}" -ne 0 ]]; then
-  fail "This script must be run as root." "Run: sudo bash deploy/mqtt-bootstrap.sh [username] [password]"
+  fail "This script must be run as root." "Run: sudo bash deploy/mqtt-bootstrap.sh [username]"
 fi
 
-if [[ -z "${MQTT_PASS}" ]]; then
-  fail "MQTT password was not supplied on the command line." "Run: sudo bash deploy/mqtt-bootstrap.sh ${MQTT_USER} 'yourStrongPassword' and then update central-controller/.env with the exact same MQTT password."
+if [[ $# -gt 1 ]]; then
+  fail "Passwords are no longer accepted on the command line (they end up in shell history)." "Run: sudo bash deploy/mqtt-bootstrap.sh ${MQTT_USER} and type the password at the prompt."
 fi
+
+if [[ ! "${MQTT_USER}" =~ ^[A-Za-z0-9_.-]{1,64}$ ]]; then
+  fail "Invalid MQTT username '${MQTT_USER}'." "Use letters, digits, '.', '_' or '-'."
+fi
+
+read -rsp "MQTT password for '${MQTT_USER}': " MQTT_PASS; echo
+read -rsp "Repeat the password: " MQTT_PASS2; echo
+if [[ -z "${MQTT_PASS}" || "${MQTT_PASS}" != "${MQTT_PASS2}" ]]; then
+  fail "The passwords were empty or did not match." "Rerun the script and type the same password twice."
+fi
+unset MQTT_PASS2
 
 PASSWD_FILE="/etc/mosquitto/passwd"
 CONF_FILE="/etc/mosquitto/conf.d/auth.conf"
@@ -54,5 +64,4 @@ systemctl enable mosquitto
 
 log "MQTT credentials configured."
 log "Username: ${MQTT_USER}"
-log "Password: ${MQTT_PASS}"
-log "Update central-controller/.env with MQTT_USERNAME and MQTT_PASSWORD."
+log "Set the same username/password in /opt/haunt-controller/.env (MQTT_USERNAME, MQTT_PASSWORD) and on each prop's settings page."
