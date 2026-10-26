@@ -170,7 +170,14 @@ Installer behavior:
 - Performs a final health check at the end of the install
 
 The dashboard is plain HTTP through Nginx. Basic auth sends the password with every request, so keep the controller on
-the haunt's private network (or add TLS to the Nginx site).
+the haunt's private network, or switch the Nginx site to HTTPS with a self-signed certificate:
+
+```bash
+sudo bash deploy/nginx-tls.sh haunt-controller.local   # or the server's IP
+```
+
+Browsers warn once about the self-signed certificate; compare the SHA-256 fingerprint the script prints, then accept.
+Rerunning `rocky-install.sh` puts back the plain HTTP site, so run `nginx-tls.sh` again afterwards.
 
 ## Verify Installation
 

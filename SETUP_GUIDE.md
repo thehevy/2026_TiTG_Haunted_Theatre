@@ -1,7 +1,7 @@
 ﻿# Arduino 101 Setup Guide (Windows, COM5)
 
 **Created:** 2026-07-30
-**Last Updated:** 2026-10-20
+**Last Updated:** 2026-10-26
 
 ## Table of Contents
 

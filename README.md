@@ -111,12 +111,15 @@ Recommended local setup:
    - `python -m venv .venv`
 3. Activate venv (PowerShell):
    - `.\.venv\Scripts\Activate.ps1`
-4. Install deps:
-   - `pip install -r requirements.txt`
+4. Install deps (includes the test tools):
+   - `pip install -r requirements-dev.txt`
 5. Configure env:
    - `copy .env.example .env`
+   - Set `ADMIN_PASSWORD` (dashboard login as `admin`). Without PostgreSQL, set `DATABASE_URL=sqlite:///./haunt.db`
 6. Run:
-   - `uvicorn app.main:app --host 0.0.0.0 --port 8080`
+   - `uvicorn app.main:app --host 127.0.0.1 --port 8080`
+7. Test:
+   - `python -m pytest -q tests`
 
 ### 3. Rocky Linux Deployment
 

@@ -95,8 +95,9 @@ As of 2026-10-26:
    sensor + NPN relay wiring (defaults should match the old node: 1 s pulse, 15 s cooldown). **First measure GPIO0 at
    power-up** (must be 2.5 V or more; see the ESP-01 `PINOUT.md`). Also check the stuck-IR message (short OUT to GND),
    that a 15 s pulse ends on time while the settings page reloads, and the 3x RST forced AP on the ESP8266.
-5. Next improvement items: optional TLS on the controller's Nginx site. Check the GitHub Actions runs of
-   `.github/workflows/build.yml` (Intel core install on the Windows runner is the riskiest step). Known, not fixed:
+5. All evaluation items are done except bench testing. CI (`.github/workflows/build.yml`) passes, including the Intel
+   core install on the Windows runner. Optional: `sudo bash deploy/nginx-tls.sh <host>` on the controller for HTTPS.
+   Known, not fixed:
    on UNO/Nano a DFPlayer command (SoftwareSerial, ~10 ms with interrupts off) can clip the first frame of a shot that
    arrives at that moment; later frames still decode unless `pw_min_frames` is raised.
 6. Upload other sketches the same way as needed:
@@ -525,3 +526,5 @@ Work on the second machine (`D:\GitHub\Arduino101`). This entry also covers 2026
   longer hides the rest from `pw_min_frames`; WiFi boards use the boot-time `device_id` for host name, AP name, MQTT
   client ID and topics until reboot (serial `SET` of network keys says "SAVE, then REBOOT to apply"); ESP32/ESP8266
   PINOUTs say to measure a 5 V relay module's IN (must be 3.6 V or less).
+- Added `central-controller/deploy/nginx-tls.sh` (self-signed HTTPS, HTTP redirect, prints the fingerprint), MIT
+  `LICENSE` (Brian Johnson), README dev steps (login, SQLite, tests). CI runs #1 and #2 passed.
