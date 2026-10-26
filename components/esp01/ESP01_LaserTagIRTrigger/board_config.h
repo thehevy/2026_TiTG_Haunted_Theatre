@@ -30,5 +30,5 @@
 #define LBL_IR "GPIO2"
 #define LBL_WIRED "GPIO2"
 #define LBL_NEG "GPIO0"
-#define LBL_AP_TRIGGER "reset 3 times quickly"
+#define LBL_AP_TRIGGER "press RST 3 times quickly; power cycles do not count"
 #define WIRED_POSITIVE_TEXT "Positive: sensor drives HIGH to fire (no pull-down: GPIO2 must be HIGH at boot)"

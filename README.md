@@ -87,9 +87,11 @@ Recommended local setup:
 1. Review wiring in the board's `PINOUT.md` (`components/esp32/ESP32_LaserTagIRTrigger/PINOUT.md` has the WiFi guide).
 2. First upload over USB: `.\tools\arduino\arduino.ps1 upload ESP32_LaserTagIRTrigger -Port COMx`
    (or `ESP8266_LaserTagIRTrigger`, `ESP01_LaserTagIRTrigger`).
-3. With no router reachable, the board starts the setup access point `Haunt-<device_id>` (password `hauntsetup`). Join it
-   and log in at `http://192.168.4.1` as `admin` / `hauntadmin`.
-4. Change both passwords, set the router SSID/password and the MQTT login, **Save**, then **Reboot**.
+3. Serial (115200) prints a generated setup AP password and admin password; write them down. With no router set, the
+   board starts the setup access point `Haunt-<device_id>`. Join it with the AP password and log in at
+   `http://192.168.4.1` as `admin` with the admin password.
+4. Set your own passwords, the router SSID/password (show router: `TITG2026HT`) and the MQTT login, **Save**, then
+   **Reboot**.
 5. Later updates can go over WiFi: `.\tools\arduino\arduino.ps1 upload ESP32_LaserTagIRTrigger -Port <board-ip>`.
 
 ### 1. Arduino 101 Laser Tag IR Trigger

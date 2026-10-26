@@ -17,8 +17,9 @@ WiFi features (router or setup AP, settings page, MQTT, OTA, passwords) are the 
 ## Differences From the ESP32 Build
 
 Only GPIO0 and GPIO2 are free, so this build is **one input, one output**: no positive output, duration jumpers, LEDs,
-aux trigger, or DFPlayer. There is no button, so force the setup AP by **resetting 3 times within 10 s each** (or the
-serial command `AP`).
+aux trigger, or DFPlayer. There is no button, so force the setup AP by **pulsing RST to GND 3 times within 10 s each**
+(power cycles do not count), or with the serial command `AP`. Each reset boots the board, and every boot clicks the relay
+(see below), so disconnect the prop's load first.
 
 **Out of the box it behaves like the old `ESP01_Node`** and uses the same wiring:
 
@@ -53,6 +54,18 @@ a **10 kOhm pull-up from GPIO0 to 3.3 V** so GPIO0 is HIGH at reset. The sketch 
 during the ~0.1-0.3 s boot GPIO0 is HIGH, so the relay can click briefly at power-up (the old sketch did the same). Do
 not connect a relay input that pulls GPIO0 LOW at rest; the ESP-01 will not boot.
 
+**Check GPIO0 at power-up (once per board):** the 10 kOhm pull-up feeds the NPN base through 1 kOhm, which can hold
+GPIO0 near 0.9 V. Below about 2.5 V the ESP-01 may read LOW and start in flash mode instead of running (serial shows
+`boot mode:(1,x)` and nothing else). With the ESP-01 removed (or held in reset with RST to GND), measure GPIO0 to GND:
+
+- **2.5 V or more:** fine.
+- **Lower:** use a 2N7000 / BS170 logic-level N-MOSFET instead of the NPN (gate to GPIO0, source to GND, drain to
+  relay IN; a gate draws no current, so GPIO0 stays at 3.3 V), or change the resistors to a 2.2 kOhm pull-up and a
+  22 kOhm base resistor.
+
+Either way the relay still clicks for the ~0.2 s boot, because GPIO0 must be HIGH at reset. Use a prop that tolerates
+a short pulse at power-up, or a relay with a longer pull-in time.
+
 ## Setup and Upload
 
 - First upload over USB with an ESP-01 programmer (hold GPIO0 LOW at reset to enter flash mode):
@@ -77,5 +90,5 @@ GPIO0 -----------+-- 1 kOhm --> NPN base ; emitter -> GND ; collector -> relay m
 
 **Replacing `ESP01_Node`:** no rewiring. Flash this sketch, then set the WiFi and MQTT settings on the settings page.
 
-Compile verified 2026-10-26: 343,176 B code in flash (32%; OTA fits in the 1 MB layout), 31,636 B RAM (39%). Not yet
+Compile verified 2026-10-26: 345,388 B code in flash (33%; OTA fits in the 1 MB layout), IRAM 93%. Not yet
 bench-tested.

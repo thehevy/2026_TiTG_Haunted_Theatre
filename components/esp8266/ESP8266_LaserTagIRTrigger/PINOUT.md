@@ -31,8 +31,8 @@ DFPlayer**. IR, both main outputs, the duration jumpers, both status LEDs, WiFi,
 | IR status LED         | D0            | 16   | 330 Ohm -> LED -> GND                                       |
 | Setup AP button       | D3            | 0    | **FLASH** button: hold 3 s while running                    |
 
-Do not connect anything to D3, D4, or D8 (boot pins). The setup AP can also be forced by resetting 3 times within 10 s
-each, or with the serial command `AP`.
+Do not connect anything to D3, D4, or D8 (boot pins). The setup AP can also be forced by pressing **RST** 3 times within
+10 s each (power cycles do not count), or with the serial command `AP`.
 
 ## Setup and Upload
 
@@ -60,4 +60,4 @@ D6 / D7 --[jumper]--> GND                 5 s / 10 s (both = 15 s)
 D0 -- 330 Ohm --> LED --> GND             IR status LED
 ```
 
-Compile verified 2026-10-26: 342,704 B code in flash (32%), 31,644 B RAM (39%). Not yet bench-tested.
+Compile verified 2026-10-26: 344,920 B code in flash (33%), IRAM 93%. Not yet bench-tested.

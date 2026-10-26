@@ -49,20 +49,32 @@ released at boot until the sketch starts, so active-LOW relay modules stay off.
 
 | Situation                                            | What the board does                                                       |
 | ---------------------------------------------------- | ------------------------------------------------------------------------- |
-| Router SSID set and reachable                        | Joins the router (default SSID `TITG2026HT`). Settings page at `http://<device_id>.local` or its IP |
-| Router SSID empty                                    | Runs only the setup access point                                          |
+| Router SSID set and reachable                        | Joins the router. Settings page at `http://<device_id>.local` or its IP |
+| Router SSID empty (the default)                      | Runs only the setup access point                                          |
 | Router not reachable within 20 s (or lost)           | Starts the setup access point; retries the router every 2 min while nobody is connected to the AP; turns the AP off once the router connects |
 | BOOT held 3 s, **or** reset 3 times within 10 s each, **or** serial command `AP` | Forces the setup access point on until the next reboot |
 
-**Setup access point:** SSID `Haunt-<device_id>` (for example `Haunt-haunt-1a2b3c`), WPA2 password `ap_pass` (default
-`hauntsetup`). Join it from a phone or laptop; the settings page opens automatically (captive portal) or browse to
-`http://192.168.4.1`.
+On the ESP8266 and ESP-01 only presses of **RST** count toward the 3 resets; power cycles do not (the count is kept in
+RTC memory so it never writes flash). On the ESP32 any reset or power cycle counts.
+
+**Setup access point:** SSID `Haunt-<device_id>` (for example `Haunt-haunt-1a2b3c`), WPA2 password `ap_pass`. Join it
+from a phone or laptop; the settings page opens automatically (captive portal) or browse to `http://192.168.4.1`.
+
+**Passwords:** there are no built-in passwords. On first boot (and after `DEFAULTS`) the board makes a random 10-character
+setup AP password and admin password and prints them on USB serial at every boot until you change them:
+
+```text
+Setup AP password (generated): k7m2pq9xra
+Settings page / OTA password for user admin (generated): 4tzh8wdn3e
+```
+
+Connect the USB serial monitor (115200) to read them. They are never shown on the WiFi settings page.
 
 The serial log shows the current address at boot and in every heartbeat. Type `WIFI` for full status.
 
 ## Settings Page
 
-Log in as user **`admin`** with `admin_pass` (default **`hauntadmin`**). The page has:
+Log in as user **`admin`** with `admin_pass` (the generated one until you change it). The page has:
 
 - **Status:** WiFi mode, IP, signal, MQTT state, pulse length, trigger counts, DFPlayer. **Test main / Test aux** buttons.
 - **Trigger:** the same settings as the USB config page (name, durations, re-arm, IR types, wired input, DFPlayer).
@@ -75,11 +87,25 @@ If any field is invalid, nothing is saved and the page lists the errors.
 
 ### Security
 
-- **Change both default passwords on first setup.** Until then the page and the serial banner show a warning.
+- **Set your own AP and admin passwords on first setup.** Until then the page shows a warning and serial prints the
+  generated ones at boot (`GET` shows `generated_passwords=1`).
 - Saved passwords are never shown or sent to the browser. Leave a password field blank to keep it.
 - Every form includes a per-boot token, so another web page cannot submit changes through your logged-in browser.
 - The page is plain HTTP. On the router network, anyone who can capture traffic could see the admin login; keep props
   on the haunt's private network, and use the setup AP (WPA2) for changes in doubtful places.
+- Pulses end on a hardware timer, so a slow page load, MQTT reconnect, or firmware upload cannot hold a relay on.
+
+## IR Input Faults
+
+If the IR input stays LOW for more than 15 ms (shorted or unpowered receiver) or never goes quiet for 400 ms (noise,
+failing receiver), the capture is dropped and serial prints (at most every 10 s):
+
+```text
+IR input GPIO19 stuck LOW; capture dropped (1 so far). Check the IR receiver wiring and power.
+```
+
+The heartbeat shows `faults N` and the MQTT heartbeat has `"ir_faults":N`. Wired, aux, MQTT, and test triggers keep
+working.
 
 ## MQTT (Central Controller)
 
@@ -91,7 +117,7 @@ broker **username and password** on the settings page.
 | `haunt/<device_id>/status`     | board -> broker | `online` (retained); `offline` as last will                          |
 | `haunt/<device_id>/trigger`    | broker -> board | `main` (or `main:pulse`, `relay1:pulse`), `aux` (or `aux:pulse`, `relay2:pulse`) |
 | `haunt/<device_id>/event`      | board -> broker | `{"src":"ir","fired":true,"ms":5000,"detail":"laser tag 0x147 9 bits"}` for every IR, wired, aux, MQTT, or test trigger |
-| `haunt/<device_id>/heartbeat`  | board -> broker | Every 30 s: name, board, firmware, IP, RSSI, uptime, pulse length, IR counts, DFPlayer |
+| `haunt/<device_id>/heartbeat`  | board -> broker | Every 30 s: name, board, firmware, IP, RSSI, uptime, pulse length, IR counts and faults, DFPlayer |
 
 An MQTT command fires the output the same way an IR shot does (lockout and re-arm apply) and plays the sound.
 
@@ -145,13 +171,19 @@ sensors and relay modules. Use an external 5 V supply for more than one relay mo
 
 ## Validation
 
-1. Upload over USB. Serial shows `ESP32 laser tag IR trigger ready`, the WiFi status, and a heartbeat every 5 s.
-2. With no router in range, confirm the setup AP appears after about 20 s. Join it and log in at `http://192.168.4.1`.
-3. Change the admin and AP passwords, set the router SSID/password and MQTT login, **Save**, then **Reboot**.
+1. Upload over USB. Serial shows `ESP32 laser tag IR trigger ready`, the generated AP and admin passwords, the WiFi
+   status, and a heartbeat every 5 s. Write the passwords down.
+2. Confirm the setup AP appears (no router is set yet). Join it with the generated AP password and log in at
+   `http://192.168.4.1` as `admin` with the generated admin password.
+3. Set your own admin and AP passwords, the router SSID/password and MQTT login, **Save**, then **Reboot**. Confirm
+   serial no longer prints generated passwords.
 4. Confirm the board joins the router (`WIFI`), the page loads at `http://<device_id>.local`, and MQTT shows connected.
 5. Fire the gun: confirm the trigger, the event on `haunt/<device_id>/event`, and the DFPlayer sound if fitted.
 6. Publish `main` to `haunt/<device_id>/trigger` and confirm the outputs fire.
 7. Hold BOOT for 3 s: confirm the setup AP starts. Reset 3 times quickly: confirm the AP starts after boot.
 8. Upload new firmware once from the page and once with `arduino.ps1 upload ... -Port <ip>`.
+9. Unplug the IR receiver OUT and short it to GND: confirm the `stuck LOW` message, then reconnect and confirm the gun
+   still fires.
+10. Fire a 15 s pulse and reload the settings page repeatedly: confirm the relay still drops on time.
 
-Compile verified 2026-10-26: 1,045,463 B flash (79% of the OTA app partition), 54,288 B RAM (16%). Not yet bench-tested.
+Compile verified 2026-10-26: 1,047,367 B flash (79% of the OTA app partition), 54,344 B RAM (16%). Not yet bench-tested.

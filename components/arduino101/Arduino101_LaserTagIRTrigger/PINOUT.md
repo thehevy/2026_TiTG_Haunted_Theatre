@@ -400,6 +400,10 @@ flowchart LR
 | Flashes     | Off            | IR seen but not decoded: read the serial line. For a gun, set `timings` to 1 on the config page and send the timings |
 | Flashes     | On             | Triggered. If a load does not switch, check its wiring and logic level             |
 | Off         | On ~0.5 s      | Aux trigger (D10) fired D11                                                           |
+| On steady   | Off            | IR input stuck LOW: serial shows `IR input D3 stuck LOW; capture dropped`. Check the receiver OUT is not shorted to GND and the receiver has power. Other triggers still work |
+
+A stuck or very noisy IR input is detected and dropped (LOW over 15 ms, or no 8 ms quiet gap within 400 ms); the log
+line repeats at most every 10 s and the heartbeat shows `faults N`.
 
 ## Validation
 
@@ -423,5 +427,5 @@ flowchart LR
     confirm `01/001`, `01/002`, `01/003`, then `01/001`. Set `mp3_reset_s` = 10, play `01/001`, wait 10 s, and confirm
     the next shot plays `01/001` again. Trigger D2 and D10 and confirm `02/001` and `02/002`.
 
-Compile verified 2026-10-26: Arduino 101 30,060 B flash (19%); UNO/Nano 15,558 B flash (48-50%), 1,169 B RAM (57%).
+Compile verified 2026-10-26: Arduino 101 30,664 B flash (19%); UNO/Nano 16,330 B flash (50-53%), 1,188 B RAM (58%).
 Not yet bench-tested.

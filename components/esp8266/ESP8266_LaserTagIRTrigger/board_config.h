@@ -30,4 +30,4 @@
 #define LBL_DUR_A "D6"
 #define LBL_DUR_B "D7"
 #define LBL_LEDS "relay D4 (onboard), IR D0"
-#define LBL_AP_TRIGGER "FLASH 3 s, or reset 3 times quickly"
+#define LBL_AP_TRIGGER "hold FLASH 3 s, or press RST 3 times quickly"

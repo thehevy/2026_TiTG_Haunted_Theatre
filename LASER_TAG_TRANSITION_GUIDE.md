@@ -311,8 +311,10 @@ Steps (every WiFi board):
 
 - [ ] Unplug power, make the wiring changes above.
 - [ ] Flash over USB: `.\tools\arduino\arduino.ps1 upload <Board>_LaserTagIRTrigger -Port COMx`.
-- [ ] Join the setup AP `Haunt-<device_id>` (password `hauntsetup`), open `http://192.168.4.1`, log in `admin` / `hauntadmin`.
-- [ ] Change the admin and AP passwords. Set the router SSID/password and the MQTT username/password.
+- [ ] Open the serial monitor (115200) and write down the generated setup AP and admin passwords it prints.
+- [ ] ESP-01 only: check GPIO0 at power-up (2.5 V or more; see its `PINOUT.md`).
+- [ ] Join the setup AP `Haunt-<device_id>` with the AP password, open `http://192.168.4.1`, log in as `admin`.
+- [ ] Set your own admin and AP passwords. Set the router SSID (`TITG2026HT`)/password and the MQTT username/password.
 - [ ] Optional: set **Device ID** to the old MQTT ID (for example `2026-ht-node-01`) so the controller keeps the same topic.
 - [ ] ESP-01: the defaults already match the old node (sensor HIGH, 1 s pulse, 15 s cooldown); change them only if needed.
 - [ ] **Save**, **Reboot**, and confirm the board joins the router and MQTT shows connected.

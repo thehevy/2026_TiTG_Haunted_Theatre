@@ -23,13 +23,15 @@ As of 2026-10-26:
 
 - **New 2026-10-26: WiFi builds `ESP32_`, `ESP8266_`, `ESP01_LaserTagIRTrigger`** (compiled, not yet uploaded). Same shared
   `.ino` as the 101/UNO/Nano builds; each folder's `board_config.h` holds pins/features; `arduino.ps1 sync` copies the
-  Arduino 101 `.ino` to all six folders. WiFi: joins the router (default `TITG2026HT`) or runs a WPA2 setup AP
-  `Haunt-<device_id>` (no SSID, router unreachable for 20 s, BOOT/FLASH held 3 s, 3 quick resets, or serial `AP`); settings
+  Arduino 101 `.ino` to all six folders. WiFi: joins the router (no SSID by default) or runs a WPA2 setup AP
+  `Haunt-<device_id>` (no SSID, router unreachable for 20 s, BOOT/FLASH held 3 s, 3 quick resets (RST only on ESP8266/ESP-01),
+  or serial `AP`); settings
   page with basic auth (`admin`), per-boot form token, passwords never shown; MQTT `haunt/<id>/status|trigger|event|heartbeat`
   with broker login; OTA via page upload or `arduino.ps1 upload <sketch> -Port <ip>`. ESP IR capture is interrupt-driven.
   ESP32 build also covers the Acebott ESP32-Max (header is GPIO-labeled). ESP8266: no wired/aux/DFPlayer. ESP-01: one input
-  (GPIO2 = IR sensor by default, or an IR receiver with `wired_input` off) + GPIO0 active-HIGH relay driver, 1 MB flash. Defaults
-  `hauntsetup` / `hauntadmin` must be changed on first setup. The old WiFi node sketches are archived.
+  (GPIO2 = IR sensor by default, or an IR receiver with `wired_input` off) + GPIO0 active-HIGH relay driver, 1 MB flash. No
+  built-in passwords: random AP/admin passwords are generated on first boot and printed on USB serial until changed (WiFi
+  config version 5). The old WiFi node sketches are archived.
 - **New 2026-10-26: consolidated `*_LaserTagIRTrigger`** for Arduino 101, UNO, and Nano (one identical source, compiled, not
   yet uploaded). Any valid IR code (laser tag, TV, LED-strip remotes) -> D4 LOW + D5 HIGH for 0.5/5/10/15 s via D8/D9 jumpers
   (live) or the saved `main_ms`; optional D2 wired input (off by default); aux D10 edge -> D11 LOW 500 ms; triggers during a
@@ -90,7 +92,11 @@ As of 2026-10-26:
    10 kOhm pull-down and a 3.3 V/5 V signal). Confirm it is ignored while set to 0 (off) with D2 floating.
 4. Bench-test one WiFi board (ESP32 first; see `components/esp32/ESP32_LaserTagIRTrigger/PINOUT.md` > Validation): setup
    AP, settings page, router join, MQTT with a broker login, page and `-Port <ip>` OTA. Then the ESP-01 on its existing
-   sensor + NPN relay wiring (defaults should match the old node: 1 s pulse, 15 s cooldown).
+   sensor + NPN relay wiring (defaults should match the old node: 1 s pulse, 15 s cooldown). **First measure GPIO0 at
+   power-up** (must be 2.5 V or more; see the ESP-01 `PINOUT.md`). Also check the stuck-IR message (short OUT to GND),
+   that a 15 s pulse ends on time while the settings page reloads, and the 3x RST forced AP on the ESP8266.
+5. Next improvement items: controller `device_id` validation, command whitelist, and auth; then `copilot-instructions`
+   shared-source rule, `sync -Check`, and CI; then the Medium/Low firmware items.
 6. Upload other sketches the same way as needed:
 
    ```powershell
@@ -228,14 +234,14 @@ Result of `.\tools\arduino\arduino.ps1 compile all` on 2026-10-26 (active sketch
 
 | Sketch | FQBN | Flash used |
 | --- | --- | --- |
-| Arduino101_LaserTagIRTrigger | `Intel:arc32:arduino_101` | 30,060 B (19%) |
+| Arduino101_LaserTagIRTrigger | `Intel:arc32:arduino_101` | 30,664 B (19%) |
 | Arduino101_PIRLaserSoundTrigger | `Intel:arc32:arduino_101` | 17,968 B (11%) |
-| UNO_LaserTagIRTrigger | `arduino:avr:uno` | 15,558 B (48%), RAM 1,169 B (57%) |
-| Nano_LaserTagIRTrigger | `arduino:avr:nano:cpu=atmega328` | 15,560 B (50%), RAM 1,169 B (57%) |
+| UNO_LaserTagIRTrigger | `arduino:avr:uno` | 16,328 B (50%), RAM 1,188 B (58%) |
+| Nano_LaserTagIRTrigger | `arduino:avr:nano:cpu=atmega328` | 16,330 B (53%), RAM 1,188 B (58%) |
 | Nano_MP3TriggerPlayer | `arduino:avr:nano:cpu=atmega328` | 7,748 B (25%), RAM 469 B (22%) |
-| ESP32_LaserTagIRTrigger | `esp32:esp32:esp32` | 1,045,463 B (79%), RAM 54,288 B (16%) |
-| ESP8266_LaserTagIRTrigger | `esp8266:esp8266:nodemcuv2` | 342,704 B IROM (32%) |
-| ESP01_LaserTagIRTrigger | `esp8266:esp8266:generic:eesz=1M64` | 343,176 B IROM (32%) |
+| ESP32_LaserTagIRTrigger | `esp32:esp32:esp32` | 1,047,367 B (79%), RAM 54,344 B (16%) |
+| ESP8266_LaserTagIRTrigger | `esp8266:esp8266:nodemcuv2` | 344,920 B IROM (33%), IRAM 93% |
+| ESP01_LaserTagIRTrigger | `esp8266:esp8266:generic:eesz=1M64` | 345,388 B IROM (33%), IRAM 93% |
 | ESP32_SmartTracking_Node | `esp32:esp32:esp32` | 309,263 B (23%) |
 | ESP32S3_SmartTracking_Node | `esp32:esp32:esp32s3` | 351,721 B (26%) |
 
@@ -496,3 +502,10 @@ Work on the second machine (`D:\GitHub\Arduino101`). This entry also covers 2026
 - Archived `UNO_Node` and `Nano_Node` with their board-level `components/uno|nano/PINOUT.md`: IR fired on command 0x00
   with no protocol check (IRremote reports unknown IR, e.g. phones, as 0x00), and D7 positive input floats.
 - Added `LASER_TAG_TRANSITION_GUIDE.md` (printable per-board rewiring cards and a deployed-board worksheet).
+- Firmware hardening (shared `.ino`, all 10 sketches compile): IR captures are dropped if the line is LOW over 15 ms or
+  busy over 400 ms (polled boards could hang on a stuck receiver), with a rate-limited log and `faults`/`ir_faults` in the
+  heartbeats. WiFi: no default SSID or passwords; random 10-char AP/admin passwords made after WiFi starts, printed on
+  serial until changed (CFG `generated_passwords`); pulses end on a `Ticker` timer and outputs are time-based, so slow
+  web/MQTT/upload work cannot hold a relay on; unauthorized firmware uploads are disconnected; ESP8266/ESP-01 3-reset
+  counter moved to RTC memory (RST presses only, no flash writes). `applyOutputs()` now runs first in `setup()`. ESP-01
+  docs: measure GPIO0 at power-up (10k pull-up into a 1k NPN base can read LOW and enter flash mode).

@@ -37,7 +37,7 @@
 #define LBL_AUX_OUT "GPIO25"
 #define LBL_LEDS "relay GPIO21, IR GPIO22"
 #define LBL_MP3 "GPIO16 RX <- module TX, GPIO17 TX -> module RX"
-#define LBL_AP_TRIGGER "BOOT 3 s, or reset 3 times quickly"
+#define LBL_AP_TRIGGER "hold BOOT 3 s, or reset 3 times quickly"
 
 #define MP3_PORT Serial2
 #define MP3_BEGIN() Serial2.begin(9600, SERIAL_8N1, 16, 17)
